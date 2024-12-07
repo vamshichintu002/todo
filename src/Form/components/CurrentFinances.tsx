@@ -46,7 +46,7 @@ export const CurrentFinances: React.FC<CurrentFinancesProps> = ({
             onChange={() => onToggle('hasDebts')}
             className="w-4 h-4 text-blue-600"
           />
-          <span>Do you have any existing debts?</span>
+          <span className="text-white">Do you have any existing debts?</span>
         </div>
 
         {formData.hasDebts && (
@@ -69,7 +69,7 @@ export const CurrentFinances: React.FC<CurrentFinancesProps> = ({
             onChange={() => onToggle('hasEmergencyFund')}
             className="w-4 h-4 text-blue-600"
           />
-          <span>Do you have an emergency fund in place?</span>
+          <span className="text-white">Do you have an emergency fund in place?</span>
         </div>
 
         {formData.hasEmergencyFund && (

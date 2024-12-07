@@ -28,7 +28,7 @@ export const AdditionalInfo: React.FC<AdditionalInfoProps> = ({
             onChange={() => onToggle('planningLifeChanges')}
             className="w-4 h-4 text-blue-600"
           />
-          <span>Are you planning any major life changes in the near future?</span>
+          <span className="text-white">Are you planning any major life changes in the near future?</span>
         </div>
 
         {formData.planningLifeChanges && (
@@ -44,7 +44,7 @@ export const AdditionalInfo: React.FC<AdditionalInfoProps> = ({
       </div>
 
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">How involved do you want to be in managing your investments?</h3>
+        <h3 className="text-lg font-medium text-white mb-4">How involved do you want to be in managing your investments?</h3>
         <RadioGroup
           name="investmentInvolvement"
           options={INVESTMENT_MANAGEMENT_PREFERENCES}

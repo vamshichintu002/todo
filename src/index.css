@@ -65,8 +65,36 @@
     --ring: 224.3 76.3% 48%;
   }
 
+  * {
+    @apply border-border;
+  }
   body {
-    @apply bg-gradient-to-b from-background via-background/95 to-background/90 min-h-screen text-foreground antialiased transition-colors duration-300;
+    @apply bg-background text-foreground;
+  }
+  input {
+    color-scheme: dark;
+  }
+  .bg-dark {
+    background-color: #0a0a0a;
+  }
+  .bg-dark-card {
+    background-color: #1a1a1a;
+  }
+  .bg-dark-input {
+    background-color: #1a1a1a;
+  }
+  .border-dark-border {
+    border-color: #2a2a2a;
+  }
+  input::placeholder {
+    color: #666666 !important;
+    opacity: 1 !important;
+  }
+  input:focus {
+    border-color: #3b82f6;
+  }
+  input {
+    caret-color: white;
   }
 }
 

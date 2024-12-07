@@ -126,7 +126,12 @@ export const FormInput: React.FC<FormInputProps> = ({
           onBlur={handleBlur}
           className={`block w-full pl-10 pr-3 py-2 bg-dark-input border ${
             touched && error ? 'border-red-500' : 'border-dark-border'
-          } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500`}
+          } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500 text-base font-medium transition-all duration-200`}
+          style={{
+            caretColor: 'white',
+            backgroundColor: '#1a1a1a',
+            boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.2)'
+          }}
           placeholder={placeholder}
           required={required}
           min={min}
