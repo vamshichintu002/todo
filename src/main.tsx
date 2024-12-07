@@ -1,8 +1,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { ClerkProvider } from '@clerk/clerk-react';
 import { RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './components/auth/AuthProvider';
 import { router } from './router';
 import './index.css';
 
@@ -15,10 +15,10 @@ if (!publishableKey) {
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={publishableKey}>
+    <AuthProvider>
       <ThemeProvider>
         <RouterProvider router={router} />
       </ThemeProvider>
-    </ClerkProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

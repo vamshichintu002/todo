@@ -1,44 +1,50 @@
-export const validateAge = (value: string): string | null => {
+export const validateAge = (value: string): string => {
+  if (!value) return '';
   const age = parseInt(value);
   if (isNaN(age) || age < 1 || age > 100) {
     return 'Age must be between 1 and 100';
   }
-  return null;
+  return '';
 };
 
-export const validateAmount = (value: string): string | null => {
+export const validateAmount = (value: string): string => {
+  if (!value) return '';
   const amount = parseFloat(value);
   if (isNaN(amount) || amount < 0) {
     return 'Please enter a valid amount';
   }
-  return null;
+  return '';
 };
 
-export const validateText = (value: string): string | null => {
+export const validateText = (value: string): string => {
+  if (!value) return '';
   if (!/^[A-Za-z\s]*$/.test(value)) {
     return 'Please enter only letters and spaces';
   }
-  return null;
+  return '';
 };
 
-export const validateNumber = (value: string, min: number, max: number): string | null => {
+export const validateNumber = (value: string, min: number, max: number): string => {
+  if (!value) return '';
   const num = parseInt(value);
   if (isNaN(num) || num < min || num > max) {
     return `Please enter a number between ${min} and ${max}`;
   }
-  return null;
+  return '';
 };
 
-export const validatePhone = (value: string): string | null => {
+export const validatePhone = (value: string): string => {
+  if (!value) return '';
   if (!/^[0-9]{10}$/.test(value)) {
     return 'Please enter a valid 10-digit phone number';
   }
-  return null;
+  return '';
 };
 
-export const validateName = (value: string): string | null => {
+export const validateName = (value: string): string => {
+  if (!value) return '';
   if (!/^[A-Za-z\s]{2,50}$/.test(value)) {
     return 'Name must be 2-50 characters long and contain only letters and spaces';
   }
-  return null;
+  return '';
 };

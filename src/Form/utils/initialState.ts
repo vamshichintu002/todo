@@ -3,25 +3,25 @@ import { FormData } from '../types/form';
 export const initialFormData: FormData = {
   name: '',
   phone: '',
-  age: '',
+  age: '18',
   employmentStatus: '',
-  annualIncome: '',
+  annualIncome: '0',
   maritalStatus: '',
-  dependents: '',
+  dependents: '0',
   
   selectedGoals: [],
   otherGoalDescription: '',
   investmentHorizon: '',
   
   riskTolerance: '',
-  riskComfortLevel: '',
+  riskComfortLevel: '1',  // Set to minimum valid value
   
-  monthlyIncome: '',
-  monthlyExpenses: '',
+  monthlyIncome: '0',
+  monthlyExpenses: '0',
   hasDebts: false,
   debtDetails: '',
   hasEmergencyFund: false,
-  emergencyFundMonths: '',
+  emergencyFundMonths: '0',
   
   selectedInvestments: [],
   otherInvestmentDescription: '',
@@ -37,5 +37,6 @@ export const initialFormData: FormData = {
   investmentExperience: '',
   planningLifeChanges: false,
   lifeChangesDetails: '',
-  investmentInvolvement: ''
+  investmentInvolvement: '',
+  additionalComments: '',
 };

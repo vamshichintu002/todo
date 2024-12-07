@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useAuth, SignIn, SignUp } from '@clerk/clerk-react';
+import { submitForm } from '../services/form';
 import { FormStep } from './components/FormStep';
 import { ProgressBar } from './components/ProgressBar';
 import { NavigationButtons } from './components/NavigationButtons';
@@ -15,9 +17,47 @@ import { initialFormData } from './utils/initialState';
 import { validateText, validateAmount, validateNumber, validatePhone, validateName } from './utils/validation';
 
 function App() {
+  const { userId, isSignedIn, isLoaded } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-dark p-4 md:p-6">
+        <div className="max-w-md mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-dark-card rounded-2xl shadow-xl p-6 md:p-8 border border-dark-border"
+          >
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-4">
+                Welcome to Investment Profile
+              </h1>
+              <p className="text-gray-400 mb-6">
+                Please sign in or sign up to access the investment questionnaire.
+              </p>
+            </div>
+            <SignIn />
+            <div className="mt-4 text-center text-gray-400">
+              <p>Don't have an account?</p>
+              <SignUp />
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -105,11 +145,28 @@ function App() {
 
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
   
-  const handleSubmit = () => {
-    if (validateStep(step)) {
-      console.log('Form submitted:', formData);
-    } else {
+  const handleSubmit = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!validateStep(step)) {
       alert('Please fill in all required fields correctly before submitting.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await submitForm(formData, userId);
+      alert('Form submitted successfully!');
+      // Optionally reset form or redirect
+      setFormData(initialFormData);
+      setStep(1);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('An error occurred while submitting the form. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -195,6 +252,8 @@ function App() {
               onPrevious={prevStep}
               onNext={nextStep}
               onSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
+              disabled={!isSignedIn}
             />
           </form>
         </motion.div>
