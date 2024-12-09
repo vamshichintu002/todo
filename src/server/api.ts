@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { prisma } from '../lib/prisma';
+import FormDataTransformer from '../lib/form-data-transformer'; 
+import { analyzePortfolio } from '../utils/portfolioAnalyzer';
 
 const app = express();
 
@@ -149,6 +151,17 @@ app.post('/api/submit-form', async (req, res) => {
     }
 
     // Create or update form details
+    const transformedData = FormDataTransformer.transformToApiFormat(formData);
+    
+    // Analyze the portfolio using the external API
+    let portfolioAnalysis = null;
+    try {
+      portfolioAnalysis = await analyzePortfolio(transformedData);
+    } catch (error) {
+      console.error('Error getting portfolio analysis:', error);
+      // Continue with form submission even if analysis fails
+    }
+
     const formDetails = await prisma.form_details.upsert({
       where: { userId: user.id },
       update: {
@@ -165,7 +178,9 @@ app.post('/api/submit-form', async (req, res) => {
         monthlyIncome: parseFloat(formData.monthlyIncome),
         monthlyExpenses: parseFloat(formData.monthlyExpenses),
         selectedInvestments: formData.selectedInvestments,
-        managementStyle: formData.managementStyle
+        managementStyle: formData.managementStyle,
+        json_data: transformedData,
+        api_out_json: portfolioAnalysis
       },
       create: {
         userId: user.id,
@@ -182,7 +197,9 @@ app.post('/api/submit-form', async (req, res) => {
         monthlyIncome: parseFloat(formData.monthlyIncome),
         monthlyExpenses: parseFloat(formData.monthlyExpenses),
         selectedInvestments: formData.selectedInvestments,
-        managementStyle: formData.managementStyle
+        managementStyle: formData.managementStyle,
+        json_data: transformedData,
+        api_out_json: portfolioAnalysis
       }
     });
 

@@ -49,6 +49,10 @@ model form_details {
   selectedInvestments String[]
   managementStyle     String
   
+  // API Request Data
+  json_data          Json?
+  api_out_json       Json?     // Store API response data
+
   // Additional Info
   lifeChangesDetails String?
   comments           String?
