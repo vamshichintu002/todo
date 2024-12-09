@@ -9,6 +9,9 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import clsx from 'clsx';
+import { useClerk } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -27,6 +30,8 @@ const didYouKnowFacts = [
 
 export function Sidebar({ isOpen, onToggle, currentPage, onPageChange }: SidebarProps) {
   const { theme } = useTheme();
+  const { signOut } = useClerk();
+  const navigate = useNavigate();
   const [showHoverArea, setShowHoverArea] = useState(false);
   const [currentFact, setCurrentFact] = useState(0);
   
@@ -137,6 +142,24 @@ export function Sidebar({ isOpen, onToggle, currentPage, onPageChange }: Sidebar
                 'w-full mt-4 flex items-center gap-2 px-4 py-3 rounded-lg',
                 'text-sm transition-colors text-red-500 hover:bg-red-500/10'
               )}
+              onClick={async () => {
+                const loadingToast = toast.loading('Logging out...', {
+                  icon: '🔄'
+                });
+                
+                // Wait for 2 seconds to show loading state
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                await signOut();
+                toast.dismiss(loadingToast);
+                
+                toast.success('Successfully logged out!', {
+                  icon: '👋',
+                  duration: 3000
+                });
+                
+                navigate('/');
+              }}
             >
               <LogOut className="w-4 h-4" />
               Log Out

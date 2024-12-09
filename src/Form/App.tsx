@@ -16,6 +16,7 @@ import { FormData } from './types/form';
 import { initialFormData } from './utils/initialState';
 import { validateText, validateAmount, validateNumber, validatePhone, validateName } from './utils/validation';
 import { useNavigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const { userId, isSignedIn, isLoaded } = useAuth();
@@ -172,94 +173,97 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-dark p-4 md:p-6">
-      <div className="max-w-2xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-dark-card rounded-2xl shadow-xl p-6 md:p-8 border border-dark-border"
-        >
-          <div className="text-center mb-8">
-            <motion.h1
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-2"
-            >
-              Investment Profile Questionnaire
-            </motion.h1>
-            
-            <ProgressBar
-              currentStep={step}
-              totalSteps={STEP_TITLES.length}
-              stepTitles={STEP_TITLES}
-            />
-          </div>
-
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-            <FormStep isVisible={step === 1}>
-              <PersonalInfo 
-                formData={formData} 
-                onChange={handleInputChange}
+    <>
+      <Toaster position="top-right" />
+      <div className="min-h-screen bg-dark p-4 md:p-6">
+        <div className="max-w-2xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-dark-card rounded-2xl shadow-xl p-6 md:p-8 border border-dark-border"
+          >
+            <div className="text-center mb-8">
+              <motion.h1
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-2"
+              >
+                Investment Profile Questionnaire
+              </motion.h1>
+              
+              <ProgressBar
+                currentStep={step}
+                totalSteps={STEP_TITLES.length}
+                stepTitles={STEP_TITLES}
               />
-            </FormStep>
+            </div>
 
-            <FormStep isVisible={step === 2}>
-              <FinancialGoals
-                formData={formData}
-                onGoalChange={handleGoalToggle}
-                onInputChange={handleInputChange}
-                onHorizonChange={(value) => setFormData(prev => ({ ...prev, investmentHorizon: value }))}
+            <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+              <FormStep isVisible={step === 1}>
+                <PersonalInfo 
+                  formData={formData} 
+                  onChange={handleInputChange}
+                />
+              </FormStep>
+
+              <FormStep isVisible={step === 2}>
+                <FinancialGoals
+                  formData={formData}
+                  onGoalChange={handleGoalToggle}
+                  onInputChange={handleInputChange}
+                  onHorizonChange={(value) => setFormData(prev => ({ ...prev, investmentHorizon: value }))}
+                />
+              </FormStep>
+
+              <FormStep isVisible={step === 3}>
+                <RiskAssessment
+                  formData={formData}
+                  onRiskToleranceChange={(value) => setFormData(prev => ({ ...prev, riskTolerance: value as typeof prev.riskTolerance }))}
+                  onInputChange={handleInputChange}
+                />
+              </FormStep>
+
+              <FormStep isVisible={step === 4}>
+                <CurrentFinances
+                  formData={formData}
+                  onChange={handleInputChange}
+                  onToggle={handleToggle}
+                />
+              </FormStep>
+
+              <FormStep isVisible={step === 5}>
+                <InvestmentPreferences
+                  formData={formData}
+                  onInvestmentChange={handleInvestmentToggle}
+                  onInputChange={handleInputChange}
+                  onStyleChange={(value) => setFormData(prev => ({ ...prev, managementStyle: value as typeof prev.managementStyle }))}
+                  onToggle={handleToggle}
+                />
+              </FormStep>
+
+              <FormStep isVisible={step === 6}>
+                <AdditionalInfo
+                  formData={formData}
+                  onChange={handleInputChange}
+                  onToggle={handleToggle}
+                  onInvolvementChange={(value) => setFormData(prev => ({ ...prev, investmentInvolvement: value as typeof prev.investmentInvolvement }))}
+                />
+              </FormStep>
+
+              <NavigationButtons
+                currentStep={step}
+                totalSteps={STEP_TITLES.length}
+                onPrevious={prevStep}
+                onNext={nextStep}
+                onSubmit={handleSubmit}
+                isSubmitting={isSubmitting}
+                disabled={!isSignedIn}
               />
-            </FormStep>
-
-            <FormStep isVisible={step === 3}>
-              <RiskAssessment
-                formData={formData}
-                onRiskToleranceChange={(value) => setFormData(prev => ({ ...prev, riskTolerance: value as typeof prev.riskTolerance }))}
-                onInputChange={handleInputChange}
-              />
-            </FormStep>
-
-            <FormStep isVisible={step === 4}>
-              <CurrentFinances
-                formData={formData}
-                onChange={handleInputChange}
-                onToggle={handleToggle}
-              />
-            </FormStep>
-
-            <FormStep isVisible={step === 5}>
-              <InvestmentPreferences
-                formData={formData}
-                onInvestmentChange={handleInvestmentToggle}
-                onInputChange={handleInputChange}
-                onStyleChange={(value) => setFormData(prev => ({ ...prev, managementStyle: value as typeof prev.managementStyle }))}
-                onToggle={handleToggle}
-              />
-            </FormStep>
-
-            <FormStep isVisible={step === 6}>
-              <AdditionalInfo
-                formData={formData}
-                onChange={handleInputChange}
-                onToggle={handleToggle}
-                onInvolvementChange={(value) => setFormData(prev => ({ ...prev, investmentInvolvement: value as typeof prev.investmentInvolvement }))}
-              />
-            </FormStep>
-
-            <NavigationButtons
-              currentStep={step}
-              totalSteps={STEP_TITLES.length}
-              onPrevious={prevStep}
-              onNext={nextStep}
-              onSubmit={handleSubmit}
-              isSubmitting={isSubmitting}
-              disabled={!isSignedIn}
-            />
-          </form>
-        </motion.div>
+            </form>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

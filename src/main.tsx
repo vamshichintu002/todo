@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './components/auth/AuthProvider';
 import { router } from './router';
+import { Toaster } from 'react-hot-toast';
 import './index.css';
 
 // Get your Clerk publishable key from environment variable
@@ -17,6 +18,16 @@ createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
       <ThemeProvider>
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+          }}
+        />
         <RouterProvider router={router} />
       </ThemeProvider>
     </AuthProvider>
