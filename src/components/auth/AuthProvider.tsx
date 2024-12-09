@@ -1,5 +1,6 @@
 import { ClerkProvider, useAuth, useUser } from '@clerk/clerk-react';
 import { useEffect, useState } from 'react';
+import { investmentDataService } from '../../features/services/investmentDataService';
 
 // Use the API instead of direct Prisma calls in the browser
 const API_URL = 'http://localhost:3001';
@@ -64,8 +65,14 @@ function AuthSync() {
 
       if (!isSignedIn || !userId || !user) {
         console.log('User not signed in or data not available');
+        // Reset investment data service when user signs out
+        investmentDataService.setUser('');
         return;
       }
+
+      // Initialize investment data service with user ID
+      console.log('Initializing investment data service for user:', userId);
+      investmentDataService.setUser(userId);
 
       // Debug user object
       console.log('Full user object:', user);

@@ -1,67 +1,128 @@
 import { InvestmentData, InvestmentDataSource } from '../types/investment';
-import { defaultInvestmentData } from '../data/defaultInvestmentData';
+import { getDefaultInvestmentData, fallbackDefaultInvestmentData } from '../data/defaultInvestmentData';
+
+export type InvestmentDataState = {
+  data: InvestmentData | null;
+  isLoading: boolean;
+  error: string | null;
+};
 
 class InvestmentDataService implements InvestmentDataSource {
-  private data: InvestmentData;
-  private subscribers: Set<(data: InvestmentData) => void>;
+  private state: InvestmentDataState;
+  private subscribers: Set<(state: InvestmentDataState) => void>;
+  private clerkId: string | null;
 
   constructor() {
-    this.data = defaultInvestmentData;
+    this.state = {
+      data: null,
+      isLoading: true,
+      error: null
+    };
     this.subscribers = new Set();
+    this.clerkId = null;
+  }
 
-    // Watch for changes in the module
-    if (import.meta.hot) {
-      import.meta.hot.accept('../data/defaultInvestmentData', (newModule) => {
-        if (newModule) {
-          this.data = newModule.defaultInvestmentData;
-          this.notifySubscribers();
-        }
+  setUser(clerkId: string) {
+    this.clerkId = clerkId;
+    if (!clerkId) {
+      this.updateState({
+        data: null,
+        isLoading: false,
+        error: null
       });
+    } else {
+      this.updateState({
+        ...this.state,
+        isLoading: true,
+        error: null
+      });
+      this.initializeData();
     }
   }
 
-  subscribe(callback: (data: InvestmentData) => void) {
+  private async initializeData() {
+    if (!this.clerkId) {
+      console.log('No user set, using null data');
+      this.updateState({
+        data: null,
+        isLoading: false,
+        error: null
+      });
+      return;
+    }
+
+    try {
+      const data = await getDefaultInvestmentData(this.clerkId);
+      this.updateState({
+        data,
+        isLoading: false,
+        error: null
+      });
+    } catch (error) {
+      console.error('Failed to initialize investment data:', error);
+      // Refresh the page after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  }
+
+  subscribe(callback: (state: InvestmentDataState) => void) {
     this.subscribers.add(callback);
-    // Immediately call with current data
-    callback(this.data);
+    // Immediately call with current state
+    callback(this.state);
     
     return () => {
       this.subscribers.delete(callback);
     };
   }
 
-  private notifySubscribers() {
-    this.subscribers.forEach(callback => callback(this.data));
+  private updateState(newState: InvestmentDataState) {
+    this.state = newState;
+    this.notifySubscribers();
   }
 
-  async fetchInvestmentData(): Promise<InvestmentData> {
-    return this.data;
+  private notifySubscribers() {
+    this.subscribers.forEach(callback => callback(this.state));
+  }
+
+  async fetchInvestmentData(): Promise<InvestmentData | null> {
+    if (!this.clerkId) {
+      console.log('No user set, returning null');
+      return null;
+    }
+
+    try {
+      this.updateState({
+        ...this.state,
+        isLoading: true,
+        error: null
+      });
+
+      const data = await getDefaultInvestmentData(this.clerkId);
+      this.updateState({
+        data,
+        isLoading: false,
+        error: null
+      });
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch investment data:', error);
+      // Refresh the page after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      return null;
+    }
   }
 
   async updateInvestmentData(newData: InvestmentData): Promise<InvestmentData> {
-    if (!this.validateDataStructure(newData)) {
-      throw new Error('Invalid data structure provided');
-    }
-
-    this.data = newData;
-    this.notifySubscribers();
-    return this.data;
-  }
-
-  private validateDataStructure(data: any): data is InvestmentData {
-    return (
-      data &&
-      typeof data.explanation === 'string' &&
-      Array.isArray(data.recommendations) &&
-      data.recommendations.every((rec: any) =>
-        typeof rec.investment_type === 'string' &&
-        typeof rec.allocation_percentage === 'number' &&
-        Array.isArray(rec.specific_suggestions)
-      ) &&
-      typeof data.market_analysis === 'object' &&
-      typeof data.review_schedule === 'string' &&
-      typeof data.disclaimer === 'string'
-    );
+    this.updateState({
+      data: newData,
+      isLoading: false,
+      error: null
+    });
+    return newData;
   }
 }
 

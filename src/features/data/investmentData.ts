@@ -1,6 +1,30 @@
 import { InvestmentData } from '../types/investment';
+import { supabase } from '../../lib/supabaseClient';
 
-export const investmentData: InvestmentData = {
+export async function getInvestmentData(): Promise<InvestmentData> {
+  try {
+    const { data, error } = await supabase
+      .from('form_details')
+      .select('api_out_json')
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.api_out_json) {
+      throw new Error('No investment data found');
+    }
+
+    return data.api_out_json as InvestmentData;
+  } catch (error) {
+    console.error('Error fetching investment data:', error);
+    throw error;
+  }
+}
+
+// Fallback static data in case the fetch fails
+export const defaultInvestmentData: InvestmentData = {
   "explanation": "Based on your Conservative risk profile and current market conditions, we have prepared a personalized investment portfolio recommendation. The allocation considers your investment horizon of Medium-term and comfort with fluctuations level of 5.",
   "recommendations": [
     {

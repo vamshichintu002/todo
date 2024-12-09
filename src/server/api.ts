@@ -32,6 +32,63 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working' });
 });
 
+// Investment data endpoint
+app.get('/api/investment/:clerkId', async (req, res) => {
+  try {
+    const { clerkId } = req.params;
+    if (!clerkId) {
+      console.log('Missing clerkId parameter in request');
+      return res.status(400).json({ message: 'Missing clerkId parameter' });
+    }
+
+    console.log('=== Investment Data Request ===');
+    console.log('ClerkId:', clerkId);
+
+    // First get the user
+    const user = await prisma.users.findUnique({
+      where: { clerkId }
+    });
+
+    if (!user) {
+      console.log('User not found for clerkId:', clerkId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('Found user:', { id: user.id, clerkId: user.clerkId });
+
+    // Then get their form details
+    const formDetails = await prisma.form_details.findUnique({
+      where: { userId: user.id },
+      select: {
+        api_out_json: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    console.log('Form details query result:', {
+      found: !!formDetails,
+      hasApiJson: !!formDetails?.api_out_json,
+      createdAt: formDetails?.createdAt,
+      updatedAt: formDetails?.updatedAt
+    });
+
+    if (!formDetails?.api_out_json) {
+      console.log('No investment data found for user:', clerkId);
+      return res.status(404).json({ message: 'No investment data found for user' });
+    }
+
+    console.log('Successfully found investment data for user:', clerkId);
+    return res.json(formDetails.api_out_json);
+  } catch (error) {
+    console.error('Error in /api/investment endpoint:', error);
+    return res.status(500).json({ 
+      message: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
 // Check if user exists
 app.get('/api/check-user/:clerkId', async (req, res) => {
   try {

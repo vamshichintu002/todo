@@ -15,9 +15,11 @@ import { STEP_TITLES } from './constants';
 import { FormData } from './types/form';
 import { initialFormData } from './utils/initialState';
 import { validateText, validateAmount, validateNumber, validatePhone, validateName } from './utils/validation';
+import { useNavigate } from 'react-router-dom';
 
 function App() {
   const { userId, isSignedIn, isLoaded } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -27,6 +29,7 @@ function App() {
     return (
       <div className="min-h-screen bg-dark flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="ml-4 text-gray-400">Loading...</div>
       </div>
     );
   }
@@ -159,9 +162,7 @@ function App() {
       setIsSubmitting(true);
       await submitForm(formData, userId);
       alert('Form submitted successfully!');
-      // Optionally reset form or redirect
-      setFormData(initialFormData);
-      setStep(1);
+      navigate('/investment-dashboard');
     } catch (error) {
       console.error('Error submitting form:', error);
       alert('An error occurred while submitting the form. Please try again.');

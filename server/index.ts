@@ -41,6 +41,31 @@ app.get('/api/dashboard/:userId', async (req, res) => {
   }
 });
 
+app.get('/api/investment', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const query = `
+      SELECT api_out_json
+      FROM form_details
+      ORDER BY created_at DESC
+      LIMIT 1;
+    `;
+
+    const result = await client.query(query);
+    
+    if (!result.rows.length || !result.rows[0].api_out_json) {
+      return res.status(404).json({ message: 'No investment data found' });
+    }
+
+    return res.status(200).json(result.rows[0].api_out_json);
+  } catch (error) {
+    console.error('Error fetching investment data:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
