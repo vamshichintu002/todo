@@ -1,3 +1,5 @@
+@import '@/features/investment/styles/index.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
