@@ -1,7 +1,24 @@
 import { FormData } from '../Form/types/form';
 
-export const submitForm = async (formData: FormData, clerkId: string) => {
+export const submitForm = async (formData: FormData, clerkId: string, email: string) => {
   try {
+    // First, sync the user
+    const syncResponse = await fetch('http://localhost:3001/api/sync-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        clerkId,
+        email,
+      }),
+    });
+
+    if (!syncResponse.ok) {
+      const errorData = await syncResponse.json();
+      throw new Error(`Failed to sync user: ${JSON.stringify(errorData)}`);
+    }
+
     // Convert string values to numbers for numeric fields
     const processedData = {
       ...formData,

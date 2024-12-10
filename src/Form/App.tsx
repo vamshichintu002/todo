@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useAuth, SignIn, SignUp } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { submitForm } from '../services/form';
 import { FormStep } from './components/FormStep';
 import { ProgressBar } from './components/ProgressBar';
@@ -19,7 +19,8 @@ import { useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
-  const { userId, isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { user } = useUser();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -35,7 +36,7 @@ function App() {
     );
   }
 
-  if (!isSignedIn) {
+  if (!isSignedIn || !user) {
     return (
       <div className="min-h-screen bg-dark p-4 md:p-6">
         <div className="max-w-md mx-auto">
@@ -49,14 +50,10 @@ function App() {
                 Welcome to Investment Profile
               </h1>
               <p className="text-gray-400 mb-6">
-                Please sign in or sign up to access the investment questionnaire.
+                Please sign in to continue
               </p>
             </div>
             <SignIn />
-            <div className="mt-4 text-center text-gray-400">
-              <p>Don't have an account?</p>
-              <SignUp />
-            </div>
           </motion.div>
         </div>
       </div>
@@ -161,7 +158,13 @@ function App() {
 
     try {
       setIsSubmitting(true);
-      await submitForm(formData, userId);
+      
+      const primaryEmail = user.primaryEmailAddress?.emailAddress;
+      if (!primaryEmail) {
+        throw new Error('User email not found. Please ensure your email is verified.');
+      }
+
+      await submitForm(formData, user.id, primaryEmail);
       alert('Form submitted successfully!');
       navigate('/investment-dashboard');
     } catch (error) {

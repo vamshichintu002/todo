@@ -220,7 +220,9 @@ app.post('/api/submit-form', async (req, res) => {
     }
 
     const formDetails = await prisma.form_details.upsert({
-      where: { userId: user.id },
+      where: {
+        userId: user.id
+      },
       update: {
         name: formData.name,
         phone: formData.phone,
@@ -236,7 +238,8 @@ app.post('/api/submit-form', async (req, res) => {
         monthlyExpenses: parseFloat(formData.monthlyExpenses),
         selectedInvestments: formData.selectedInvestments,
         managementStyle: formData.managementStyle,
-        json_data: transformedData,
+        lifeChangesDetails: formData.lifeChangesDetails || null,
+        comments: formData.comments || null,
         api_out_json: portfolioAnalysis
       },
       create: {
@@ -255,7 +258,8 @@ app.post('/api/submit-form', async (req, res) => {
         monthlyExpenses: parseFloat(formData.monthlyExpenses),
         selectedInvestments: formData.selectedInvestments,
         managementStyle: formData.managementStyle,
-        json_data: transformedData,
+        lifeChangesDetails: formData.lifeChangesDetails || null,
+        comments: formData.comments || null,
         api_out_json: portfolioAnalysis
       }
     });
