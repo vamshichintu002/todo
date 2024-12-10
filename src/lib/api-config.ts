@@ -1,6 +1,10 @@
 // API configuration
+const isProd = import.meta.env.PROD;
+const prodApiUrl = 'https://todo-three-lyart-41.vercel.app';
+const devApiUrl = 'http://localhost:3001';
+
 export const API_CONFIG = {
-  baseURL: process.env.VITE_API_URL || 'http://localhost:3001',
+  baseURL: isProd ? prodApiUrl : devApiUrl,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -22,7 +26,7 @@ export function handleApiError(error: any) {
     // The request was made and the server responded with a status code
     // that falls out of the range of 2xx
     return {
-      message: error.response.data.message || 'An error occurred',
+      message: error.response.data?.message || 'An error occurred',
       status: error.response.status,
       data: error.response.data
     };

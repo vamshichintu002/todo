@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { prisma } from '../lib/prisma';
+import { prisma, withPrisma } from '../lib/database';
 import FormDataTransformer from '../lib/form-data-transformer'; 
 import { analyzePortfolio } from '../utils/portfolioAnalyzer';
 
@@ -8,7 +8,7 @@ const app = express();
 
 // CORS configuration with environment-based origins
 const allowedOrigins = [
-  process.env.NEXT_PUBLIC_VERCEL_URL && `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`,
+  'https://todo-git-main-princechintu70-yahoocoms-projects.vercel.app',
   'http://localhost:5173'
 ].filter(Boolean);
 
@@ -17,6 +17,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('Blocked by CORS:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -55,45 +56,44 @@ app.get('/api/investment/:clerkId', async (req, res) => {
     console.log('=== Investment Data Request ===');
     console.log('ClerkId:', clerkId);
 
-    // First get the user
-    const user = await prisma.users.findUnique({
-      where: { clerkId }
-    });
+    const result = await withPrisma(async (prisma) => {
+      // First get the user
+      const user = await prisma.users.findUnique({
+        where: { clerkId }
+      });
 
-    if (!user) {
-      console.log('User not found for clerkId:', clerkId);
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    console.log('Found user:', { id: user.id, clerkId: user.clerkId });
-
-    // Then get their form details
-    const formDetails = await prisma.form_details.findUnique({
-      where: { userId: user.id },
-      select: {
-        api_out_json: true,
-        createdAt: true,
-        updatedAt: true
+      if (!user) {
+        console.log('User not found for clerkId:', clerkId);
+        return res.status(404).json({ message: 'User not found' });
       }
+
+      console.log('Found user:', { id: user.id, clerkId: user.clerkId });
+
+      // Then get their form details
+      const formDetails = await prisma.form_details.findFirst({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          api_out_json: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+
+      if (!formDetails?.api_out_json) {
+        console.log('No investment data found for user:', clerkId);
+        return res.status(404).json({ message: 'No investment data found for user' });
+      }
+
+      return formDetails.api_out_json;
     });
 
-    console.log('Form details query result:', {
-      found: !!formDetails,
-      hasApiJson: !!formDetails?.api_out_json,
-      createdAt: formDetails?.createdAt,
-      updatedAt: formDetails?.updatedAt
-    });
-
-    if (!formDetails?.api_out_json) {
-      console.log('No investment data found for user:', clerkId);
-      return res.status(404).json({ message: 'No investment data found for user' });
+    if (result) {
+      res.json(result);
     }
-
-    console.log('Successfully found investment data for user:', clerkId);
-    return res.json(formDetails.api_out_json);
   } catch (error) {
     console.error('Error in /api/investment endpoint:', error);
-    return res.status(500).json({ 
+    res.status(500).json({ 
       message: 'Internal server error',
       details: error.message
     });

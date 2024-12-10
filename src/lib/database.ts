@@ -9,9 +9,14 @@ const pool = new Pool({
     : false
 });
 
-// Prisma client with global caching
+// Initialize Prisma Client with logging in development
+const prismaClientOptions = process.env.NODE_ENV === 'development' 
+  ? { log: ['query', 'info', 'warn', 'error'] }
+  : {};
+
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
@@ -37,5 +42,17 @@ export async function withDbClient<T>(
     throw error;
   } finally {
     client.release();
+  }
+}
+
+// Error handling wrapper for Prisma operations
+export async function withPrisma<T>(
+  operation: (prisma: PrismaClient) => Promise<T>
+): Promise<T> {
+  try {
+    return await operation(prisma);
+  } catch (error) {
+    console.error('Database operation failed:', error);
+    throw error;
   }
 }
