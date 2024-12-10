@@ -9,9 +9,10 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist/server",
     "rootDir": "src",
-    "lib": ["ES2023"],
-    "types": ["node"],
-    "allowJs": true
+    "lib": ["ES2023", "DOM"],
+    "types": ["node", "vite/client"],
+    "allowJs": true,
+    "resolveJsonModule": true
   },
   "include": ["src/server/**/*", "src/lib/**/*", "src/utils/**/*"],
   "exclude": ["node_modules"]
