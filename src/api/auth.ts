@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../config';
 
 export async function syncUser(clerkId: string, email: string) {
   try {

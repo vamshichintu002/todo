@@ -1,9 +1,10 @@
 import { InvestmentData } from '../types/investment';
+import { API_URL } from '../../config';
 
 export async function getDefaultInvestmentData(clerkId: string): Promise<InvestmentData> {
   try {
     console.log('Fetching investment data for user:', clerkId);
-    const response = await fetch(`http://localhost:3001/api/investment/${clerkId}`);
+    const response = await fetch(`${API_URL}/api/investment/${clerkId}`);
     console.log('API response status:', response.status);
     
     if (response.status === 404) {

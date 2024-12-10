@@ -1,9 +1,9 @@
 import { ClerkProvider, useAuth, useUser } from '@clerk/clerk-react';
 import { useEffect, useState } from 'react';
 import { investmentDataService } from '../../features/services/investmentDataService';
+import { API_URL } from '../../config';
 
 // Use the API instead of direct Prisma calls in the browser
-const API_URL = 'http://localhost:3001';
 
 async function testAPI() {
   try {

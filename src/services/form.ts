@@ -1,9 +1,10 @@
 import { FormData } from '../Form/types/form';
+import { API_URL } from '../config';
 
 export const submitForm = async (formData: FormData, clerkId: string, email: string) => {
   try {
     // First, sync the user
-    const syncResponse = await fetch('http://localhost:3001/api/sync-user', {
+    const syncResponse = await fetch(`${API_URL}/api/sync-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,7 +31,7 @@ export const submitForm = async (formData: FormData, clerkId: string, email: str
       emergencyFundMonths: parseInt(formData.emergencyFundMonths || '0'),
     };
 
-    const response = await fetch('http://localhost:3001/api/submit-form', {
+    const response = await fetch(`${API_URL}/api/submit-form`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -7,8 +7,10 @@ import { analyzePortfolio } from '../utils/portfolioAnalyzer';
 const app = express();
 
 // Enable CORS with specific options
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 app.use(cors({
-  origin: 'http://localhost:5173', // Allow only our frontend
+  origin: FRONTEND_URL, // Use environment variable with localhost fallback
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
