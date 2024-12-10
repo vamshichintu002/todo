@@ -4,7 +4,7 @@
   "installCommand": "npm install",
   "framework": null,
   "functions": {
-    "src/server/**/*.ts": {
+    "api/*.ts": {
       "memory": 1024,
       "maxDuration": 10
     }
@@ -12,7 +12,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/src/server/api.ts"
+      "destination": "/api"
     }
   ],
   "headers": [
