@@ -7,6 +7,14 @@ functions = "netlify/functions"
 directory = "netlify/functions"
 node_bundler = "esbuild"
 
+[[headers]]
+for = "/*"
+[headers.values]
+X-Frame-Options = "DENY"
+X-XSS-Protection = "1; mode=block"
+X-Content-Type-Options = "nosniff"
+Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' *.netlify.app:*; img-src 'self' data: blob: https:; connect-src 'self' https://*.netlify.app:* https://* wss://*.netlify.app:*;"
+
 [[redirects]]
 from = "/api/sync-user"
 to = "/.netlify/functions/api"
