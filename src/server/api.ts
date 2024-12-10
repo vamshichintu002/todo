@@ -48,7 +48,7 @@ const testHandler: RequestHandler = (req, res) => {
 app.get('/api/test', testHandler);
 
 // Test database connection endpoint
-const testDbHandler: RequestHandler = async (req, res) => {
+const testDbHandler: RequestHandler = async (req, res, next) => {
   try {
     console.log('Testing database connection...');
     const result = await prisma.$queryRaw`SELECT current_timestamp`;
@@ -64,111 +64,91 @@ const testDbHandler: RequestHandler = async (req, res) => {
       userCount
     });
   } catch (error) {
-    console.error('Database connection test failed:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Database connection failed',
-      error: error instanceof Error ? error.message : String(error)
-    });
+    next(error);
   }
 };
 
 app.get('/api/test-db', testDbHandler);
 
+interface User {
+  id: string;
+  clerkId: string;
+  email: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface FormDetails {
+  id: string;
+  userId: string;
+  name: string;
+  phone: string;
+  age: number;
+  employmentStatus: string;
+  annualIncome: number;
+  maritalStatus: string;
+  selectedGoals: string[];
+  investmentHorizon: string;
+  riskTolerance: string;
+  riskComfortLevel: number;
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  selectedInvestments: string[];
+  managementStyle: string;
+  lifeChanges: string;
+  comments: string;
+  createdAt: Date;
+  updatedAt: Date;
+  json_data: any;
+  api_out_json: any;
+}
+
 // Investment data endpoint
 interface InvestmentParams { clerkId: string }
-const getInvestmentHandler: RequestHandler<InvestmentParams> = async (req, res) => {
-  const { clerkId } = req.params;
-  
+const getInvestmentHandler: RequestHandler<InvestmentParams> = async (req, res, next) => {
   try {
-    console.log(`[${new Date().toISOString()}] Starting investment data fetch for clerkId:`, clerkId);
+    const { clerkId } = req.params;
     
-    if (!clerkId) {
-      console.log('Missing clerkId parameter in request');
-      return res.status(400).json({ message: 'Missing clerkId parameter' });
-    }
-
-    // Test database connection
-    try {
-      console.log('Testing database connection...');
-      const result = await prisma.$queryRaw`SELECT current_timestamp`;
-      console.log('Database connection successful:', result);
-    } catch (error: any) {
-      console.error('Database connection failed:', {
-        error: error.message,
-        code: error?.code,
-        meta: error?.meta
-      });
-      return res.status(500).json({ 
-        message: 'Database connection failed',
-        error: process.env.NODE_ENV === 'development' ? {
-          message: error.message,
-          code: error?.code
-        } : 'Database error'
-      });
-    }
-
     const user = await prisma.users.findUnique({
-      where: { clerkId },
-      select: {
-        id: true,
-        clerkId: true,
-        email: true,
-        createdAt: true
-      }
+      where: { clerkId }
     });
 
     if (!user) {
-      return res.status(404).json({ 
-        message: 'User not found',
-        debug: { clerkId }
-      });
+      res.status(404).json({ error: 'User not found' });
+      return;
     }
 
     const formDetails = await prisma.form_details.findFirst({
       where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         userId: true,
+        name: true,
+        phone: true,
+        age: true,
+        employmentStatus: true,
+        annualIncome: true,
+        maritalStatus: true,
+        selectedGoals: true,
+        investmentHorizon: true,
+        riskTolerance: true,
+        riskComfortLevel: true,
+        monthlyIncome: true,
+        monthlyExpenses: true,
+        selectedInvestments: true,
+        managementStyle: true,
+        lifeChanges: true,
+        comments: true,
+        json_data: true,
         api_out_json: true,
         createdAt: true,
         updatedAt: true
       }
     });
 
-    if (!formDetails?.api_out_json) {
-      return res.status(404).json({ 
-        message: 'No investment data found for user',
-        debug: { 
-          userId: user.id,
-          clerkId: user.clerkId,
-          formFound: !!formDetails
-        }
-      });
-    }
-
-    return res.json(formDetails.api_out_json);
-
-  } catch (error: any) {
-    console.error('Detailed error in /api/investment endpoint:', {
-      error: error.message,
-      code: error?.code,
-      meta: error?.meta,
-      stack: error.stack,
-      clerkId,
-      timestamp: new Date().toISOString()
-    });
-
-    return res.status(500).json({ 
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? {
-        message: error.message,
-        code: error?.code,
-        type: error.name,
-        meta: error?.meta
-      } : 'An error occurred'
-    });
+    res.json({ user, formDetails });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -273,41 +253,61 @@ app.post('/api/sync-user', syncUserHandler);
 
 // Submit form endpoint
 interface SubmitFormBody { clerkId: string, formData: any }
-const submitFormHandler: RequestHandler<{ clerkId: string }, any, SubmitFormBody> = async (req, res) => {
+const submitFormHandler: RequestHandler<{ clerkId: string }, any, SubmitFormBody> = async (req, res, next) => {
   try {
     const { clerkId, formData } = req.body;
     
+    // First get the user
+    const user = await prisma.users.findUnique({
+      where: { clerkId }
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
     // Update existing form data
     const existingForm = await prisma.form_details.findFirst({
-      where: { clerk_id: clerkId }
+      where: { userId: user.id }
     });
+
+    const formDataToSave = {
+      userId: user.id,
+      name: formData.name,
+      phone: formData.phone,
+      age: formData.age,
+      employmentStatus: formData.employmentStatus,
+      annualIncome: formData.annualIncome,
+      maritalStatus: formData.maritalStatus,
+      selectedGoals: formData.selectedGoals,
+      investmentHorizon: formData.investmentHorizon,
+      riskTolerance: formData.riskTolerance,
+      riskComfortLevel: formData.riskComfortLevel,
+      monthlyIncome: formData.monthlyIncome,
+      monthlyExpenses: formData.monthlyExpenses,
+      selectedInvestments: formData.selectedInvestments,
+      managementStyle: formData.managementStyle,
+      lifeChanges: formData.lifeChanges,
+      comments: formData.comments,
+      json_data: formData
+    };
 
     if (existingForm) {
       const updatedForm = await prisma.form_details.update({
         where: { id: existingForm.id },
-        data: {
-          clerk_id: clerkId,
-          form_data: formData
-        }
+        data: formDataToSave
       });
       res.json(updatedForm);
     } else {
       // Create new form data
       const newForm = await prisma.form_details.create({
-        data: {
-          clerk_id: clerkId,
-          form_data: formData
-        }
+        data: formDataToSave
       });
       res.json(newForm);
     }
   } catch (error) {
-    console.error('Form submission error:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to submit form',
-      error: error instanceof Error ? error.message : String(error)
-    });
+    next(error);
   }
 };
 

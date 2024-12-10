@@ -22,31 +22,15 @@ const prismaClientOptions: Prisma.PrismaClientOptions = {
   }
 };
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
-
-// Create Prisma client with connection retry logic
-async function createPrismaClient(): Promise<PrismaClient> {
-  const client = new PrismaClient(prismaClientOptions);
-
-  try {
-    // Test the connection
-    await client.$connect();
-    console.log('Database connection established successfully');
-    return client;
-  } catch (error) {
-    console.error('Failed to connect to database:', error);
-    throw error;
-  }
+declare global {
+  var prisma: PrismaClient | undefined;
 }
 
-// Initialize the client
-export const prisma = globalForPrisma.prisma ?? (() => {
-  const client = createPrismaClient();
-  if (process.env.NODE_ENV !== 'production') {
-    globalForPrisma.prisma = client;
-  }
-  return client;
-})();
+const prisma = global.prisma || new PrismaClient(prismaClientOptions);
+
+if (process.env.NODE_ENV !== 'production') {
+  global.prisma = prisma;
+}
 
 // Listen for Prisma events
 prisma.$on('error', (e: Prisma.LogEvent) => {
@@ -106,4 +90,4 @@ export async function withPrisma<T>(
   throw lastError;
 }
 
-export { pool };
+export { prisma, pool };
