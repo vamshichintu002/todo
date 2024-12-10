@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "src/server/api.ts",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["tsconfig.server.json"]
+      }
     },
     {
       "src": "package.json",

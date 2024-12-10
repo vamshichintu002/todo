@@ -57,21 +57,18 @@ const testDbHandler: RequestHandler = async (req, res) => {
     const userCount = await prisma.users.count();
     console.log('Total users in database:', userCount);
     
-    return res.json({ 
+    res.json({ 
       status: 'success',
+      message: 'Database connection successful',
       timestamp: result,
       userCount
     });
-  } catch (error: any) {
-    console.error('Database test failed:', {
-      error: error.message,
-      code: error?.code,
-      meta: error?.meta
-    });
-    return res.status(500).json({
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    res.status(500).json({ 
       status: 'error',
-      message: error.message,
-      code: error?.code
+      message: 'Database connection failed',
+      error: error instanceof Error ? error.message : String(error)
     });
   }
 };
@@ -279,89 +276,37 @@ interface SubmitFormBody { clerkId: string, formData: any }
 const submitFormHandler: RequestHandler<{ clerkId: string }, any, SubmitFormBody> = async (req, res) => {
   try {
     const { clerkId, formData } = req.body;
-
-    if (!clerkId || !formData) {
-      return res.status(400).json({
-        error: 'Missing required fields',
-        details: 'Both clerkId and formData are required'
-      });
-    }
-
-    console.log('Submitting form for user:', clerkId);
-
-    // First, get the user by clerkId
-    const user = await prisma.users.findUnique({
-      where: { clerkId: clerkId }
-    });
-
-    if (!user) {
-      console.error('User not found for clerkId:', clerkId);
-      return res.status(404).json({ 
-        error: 'User not found',
-        details: `No user found with clerkId: ${clerkId}`
-      });
-    }
-
-    // Create or update form details
-    const transformedData = FormDataTransformer.transformToApiFormat(formData);
     
-    // Analyze the portfolio using the external API
-    let portfolioAnalysis = null;
-    try {
-      portfolioAnalysis = await analyzePortfolio(transformedData);
-    } catch (error: any) {
-      console.error('Error getting portfolio analysis:', error);
-      // Continue with form submission even if analysis fails
-    }
-
-    const formDetails = await prisma.form_details.upsert({
-      where: { userId: user.id },
-      update: {
-        name: formData.name,
-        phone: formData.phone,
-        age: parseInt(formData.age),
-        employmentStatus: formData.employmentStatus,
-        annualIncome: parseFloat(formData.annualIncome),
-        maritalStatus: formData.maritalStatus,
-        selectedGoals: formData.selectedGoals,
-        investmentHorizon: formData.investmentHorizon,
-        riskTolerance: formData.riskTolerance,
-        riskComfortLevel: parseInt(formData.riskComfortLevel),
-        monthlyIncome: parseFloat(formData.monthlyIncome),
-        monthlyExpenses: parseFloat(formData.monthlyExpenses),
-        selectedInvestments: formData.selectedInvestments,
-        managementStyle: formData.managementStyle,
-        json_data: transformedData,
-        api_out_json: portfolioAnalysis
-      },
-      create: {
-        userId: user.id,
-        name: formData.name,
-        phone: formData.phone,
-        age: parseInt(formData.age),
-        employmentStatus: formData.employmentStatus,
-        annualIncome: parseFloat(formData.annualIncome),
-        maritalStatus: formData.maritalStatus,
-        selectedGoals: formData.selectedGoals,
-        investmentHorizon: formData.investmentHorizon,
-        riskTolerance: formData.riskTolerance,
-        riskComfortLevel: parseInt(formData.riskComfortLevel),
-        monthlyIncome: parseFloat(formData.monthlyIncome),
-        monthlyExpenses: parseFloat(formData.monthlyExpenses),
-        selectedInvestments: formData.selectedInvestments,
-        managementStyle: formData.managementStyle,
-        json_data: transformedData,
-        api_out_json: portfolioAnalysis
-      }
+    // Update existing form data
+    const existingForm = await prisma.form_details.findFirst({
+      where: { clerk_id: clerkId }
     });
 
-    console.log('Form details saved:', formDetails);
-    res.json({ success: true, formDetails });
-  } catch (error: any) {
-    console.error('Error in /api/submit-form:', error);
-    res.status(500).json({
-      error: 'Failed to submit form',
-      details: error.message
+    if (existingForm) {
+      const updatedForm = await prisma.form_details.update({
+        where: { id: existingForm.id },
+        data: {
+          clerk_id: clerkId,
+          form_data: formData
+        }
+      });
+      res.json(updatedForm);
+    } else {
+      // Create new form data
+      const newForm = await prisma.form_details.create({
+        data: {
+          clerk_id: clerkId,
+          form_data: formData
+        }
+      });
+      res.json(newForm);
+    }
+  } catch (error) {
+    console.error('Form submission error:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to submit form',
+      error: error instanceof Error ? error.message : String(error)
     });
   }
 };

@@ -40,18 +40,20 @@ async function createPrismaClient(): Promise<PrismaClient> {
 }
 
 // Initialize the client
-export const prisma = globalForPrisma.prisma ?? await createPrismaClient();
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+export const prisma = globalForPrisma.prisma ?? (() => {
+  const client = createPrismaClient();
+  if (process.env.NODE_ENV !== 'production') {
+    globalForPrisma.prisma = client;
+  }
+  return client;
+})();
 
 // Listen for Prisma events
-prisma.$on('error' as any, (e: any) => {
+prisma.$on('error', (e: Prisma.LogEvent) => {
   console.error('Prisma Error:', e);
 });
 
-prisma.$on('warn' as any, (e: any) => {
+prisma.$on('warn', (e: Prisma.LogEvent) => {
   console.warn('Prisma Warning:', e);
 });
 
