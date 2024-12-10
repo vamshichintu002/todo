@@ -8,7 +8,7 @@ const app = express();
 
 // CORS configuration with environment-based origins
 const allowedOrigins = [
-  'https://todo-git-main-princechintu70-yahoocoms-projects.vercel.app',
+  'https://todo-three-lyart-41.vercel.app',
   'http://localhost:5173'
 ].filter(Boolean);
 
