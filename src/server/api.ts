@@ -1,6 +1,6 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { prisma, withPrisma } from '../lib/database';
+import { prisma } from '../lib/database';
 import FormDataTransformer from '../lib/form-data-transformer'; 
 import { analyzePortfolio } from '../utils/portfolioAnalyzer';
 
@@ -29,79 +29,108 @@ app.use(cors({
 app.use(express.json());
 
 // Debug middleware to log all requests
-app.use((req, res, next) => {
-  console.log('=== Incoming Request ===');
-  console.log('Method:', req.method);
-  console.log('Path:', req.path);
-  console.log('Body:', req.body);
-  console.log('Headers:', req.headers);
-  console.log('=====================');
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Query:', JSON.stringify(req.query, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
   next();
 });
 
+// Error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error('Global error handler caught:', err);
+  res.status(500).json({
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred'
+  });
+});
+
 // Test endpoint
-app.get('/api/test', (req, res) => {
+app.get('/api/test', (req: Request, res: Response) => {
   res.json({ message: 'API is working' });
 });
 
 // Investment data endpoint
-app.get('/api/investment/:clerkId', async (req, res) => {
+app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
+  const { clerkId } = req.params;
+  
   try {
-    const { clerkId } = req.params;
+    console.log(`[${new Date().toISOString()}] Fetching investment data for clerkId:`, clerkId);
+    
     if (!clerkId) {
       console.log('Missing clerkId parameter in request');
       return res.status(400).json({ message: 'Missing clerkId parameter' });
     }
 
-    console.log('=== Investment Data Request ===');
-    console.log('ClerkId:', clerkId);
-
-    const result = await withPrisma(async (prisma) => {
-      // First get the user
-      const user = await prisma.users.findUnique({
-        where: { clerkId }
+    // Test database connection
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      console.log('Database connection successful');
+    } catch (dbError: any) {
+      console.error('Database connection failed:', dbError);
+      return res.status(500).json({ 
+        message: 'Database connection failed',
+        error: process.env.NODE_ENV === 'development' ? dbError.message : 'Database error'
       });
+    }
 
-      if (!user) {
-        console.log('User not found for clerkId:', clerkId);
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      console.log('Found user:', { id: user.id, clerkId: user.clerkId });
-
-      // Then get their form details
-      const formDetails = await prisma.form_details.findFirst({
-        where: { userId: user.id },
-        orderBy: { createdAt: 'desc' },
-        select: {
-          api_out_json: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      });
-
-      if (!formDetails?.api_out_json) {
-        console.log('No investment data found for user:', clerkId);
-        return res.status(404).json({ message: 'No investment data found for user' });
-      }
-
-      return formDetails.api_out_json;
+    const user = await prisma.users.findUnique({
+      where: { clerkId }
     });
 
-    if (result) {
-      res.json(result);
+    console.log('User query result:', user ? 'Found' : 'Not found');
+
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        debug: { clerkId }
+      });
     }
-  } catch (error) {
-    console.error('Error in /api/investment endpoint:', error);
-    res.status(500).json({ 
+
+    const formDetails = await prisma.form_details.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        api_out_json: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    console.log('Form details found:', formDetails ? 'Yes' : 'No');
+
+    if (!formDetails?.api_out_json) {
+      return res.status(404).json({ 
+        message: 'No investment data found for user',
+        debug: { userId: user.id }
+      });
+    }
+
+    console.log('Successfully returning investment data');
+    return res.json(formDetails.api_out_json);
+
+  } catch (error: any) {
+    console.error('Detailed error in /api/investment endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      clerkId,
+      timestamp: new Date().toISOString()
+    });
+
+    return res.status(500).json({ 
       message: 'Internal server error',
-      details: error.message
+      error: process.env.NODE_ENV === 'development' ? {
+        message: error.message,
+        type: error.name,
+        stack: error.stack
+      } : 'An error occurred'
     });
   }
 });
 
 // Check if user exists
-app.get('/api/check-user/:clerkId', async (req, res) => {
+app.get('/api/check-user/:clerkId', async (req: Request, res: Response) => {
   try {
     console.log('=== Check User Request ===');
     console.log('Checking user existence for clerkId:', req.params.clerkId);
@@ -112,7 +141,7 @@ app.get('/api/check-user/:clerkId', async (req, res) => {
     
     console.log('User check result:', user);
     res.json({ exists: !!user, user });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error checking user:', error);
     res.status(500).json({ 
       error: 'Failed to check user', 
@@ -123,7 +152,7 @@ app.get('/api/check-user/:clerkId', async (req, res) => {
 });
 
 // Create or update user
-app.post('/api/sync-user', async (req, res) => {
+app.post('/api/sync-user', async (req: Request, res: Response) => {
   try {
     console.log('=== Sync User Request ===');
     const { clerkId, email } = req.body;
@@ -156,7 +185,7 @@ app.post('/api/sync-user', async (req, res) => {
           },
         });
         console.log('Successfully created user:', user);
-      } catch (createError) {
+      } catch (createError: any) {
         console.error('Error creating user:', createError);
         throw createError;
       }
@@ -168,7 +197,7 @@ app.post('/api/sync-user', async (req, res) => {
           data: { email },
         });
         console.log('Successfully updated user:', user);
-      } catch (updateError) {
+      } catch (updateError: any) {
         console.error('Error updating user:', updateError);
         throw updateError;
       }
@@ -180,7 +209,7 @@ app.post('/api/sync-user', async (req, res) => {
       exists: !!existingUser,
       message: existingUser ? 'User updated' : 'User created'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in sync-user endpoint:', error);
     res.status(500).json({ 
       error: 'Failed to sync user', 
@@ -192,7 +221,7 @@ app.post('/api/sync-user', async (req, res) => {
 });
 
 // Submit form endpoint
-app.post('/api/submit-form', async (req, res) => {
+app.post('/api/submit-form', async (req: Request, res: Response) => {
   try {
     const { clerkId, formData } = req.body;
 
@@ -225,7 +254,7 @@ app.post('/api/submit-form', async (req, res) => {
     let portfolioAnalysis = null;
     try {
       portfolioAnalysis = await analyzePortfolio(transformedData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting portfolio analysis:', error);
       // Continue with form submission even if analysis fails
     }
@@ -273,7 +302,7 @@ app.post('/api/submit-form', async (req, res) => {
 
     console.log('Form details saved:', formDetails);
     res.json({ success: true, formDetails });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in /api/submit-form:', error);
     res.status(500).json({
       error: 'Failed to submit form',
@@ -283,7 +312,7 @@ app.post('/api/submit-form', async (req, res) => {
 });
 
 // Global error handling middleware
-app.use((err, req, res, next) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('=== Server Error ===');
   console.error('Error:', err);
   console.error('Stack:', err.stack);
@@ -300,3 +329,5 @@ const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+export default app;
