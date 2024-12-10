@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 // PostgreSQL connection pool
 const pool = new Pool({
@@ -10,8 +10,15 @@ const pool = new Pool({
 });
 
 // Initialize Prisma Client with logging in development
-const prismaClientOptions = process.env.NODE_ENV === 'development' 
-  ? { log: ['query', 'info', 'warn', 'error'] }
+const prismaClientOptions: Prisma.PrismaClientOptions = process.env.NODE_ENV === 'development' 
+  ? { 
+      log: [
+        { level: 'query', emit: 'event' },
+        { level: 'info', emit: 'event' },
+        { level: 'warn', emit: 'event' },
+        { level: 'error', emit: 'event' }
+      ]
+    }
   : {};
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };

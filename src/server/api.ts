@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { prisma } from '../lib/database';
+import { Prisma } from '@prisma/client';
 import FormDataTransformer from '../lib/form-data-transformer'; 
 import { analyzePortfolio } from '../utils/portfolioAnalyzer';
 
@@ -37,15 +38,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Global error handler caught:', err);
-  res.status(500).json({
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred'
-  });
-});
-
 // Test endpoint
 app.get('/api/test', (req: Request, res: Response) => {
   res.json({ message: 'API is working' });
@@ -69,19 +61,19 @@ app.get('/api/test-db', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Database test failed:', {
       error: error.message,
-      code: error.code,
-      meta: error.meta
+      code: error?.code,
+      meta: error?.meta
     });
     return res.status(500).json({
       status: 'error',
       message: error.message,
-      code: error.code
+      code: error?.code
     });
   }
 });
 
 // Investment data endpoint
-app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
+app.get('/api/investment/:clerkId', async (req: Request<{ clerkId: string }>, res: Response) => {
   const { clerkId } = req.params;
   
   try {
@@ -97,22 +89,21 @@ app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
       console.log('Testing database connection...');
       const result = await prisma.$queryRaw`SELECT current_timestamp`;
       console.log('Database connection successful:', result);
-    } catch (dbError: any) {
+    } catch (error: any) {
       console.error('Database connection failed:', {
-        error: dbError.message,
-        code: dbError.code,
-        meta: dbError.meta
+        error: error.message,
+        code: error?.code,
+        meta: error?.meta
       });
       return res.status(500).json({ 
         message: 'Database connection failed',
         error: process.env.NODE_ENV === 'development' ? {
-          message: dbError.message,
-          code: dbError.code
+          message: error.message,
+          code: error?.code
         } : 'Database error'
       });
     }
 
-    console.log('Looking up user with clerkId:', clerkId);
     const user = await prisma.users.findUnique({
       where: { clerkId },
       select: {
@@ -123,17 +114,13 @@ app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
       }
     });
 
-    console.log('User lookup result:', JSON.stringify(user, null, 2));
-
     if (!user) {
-      console.log('User not found for clerkId:', clerkId);
       return res.status(404).json({ 
         message: 'User not found',
         debug: { clerkId }
       });
     }
 
-    console.log('Found user, looking up form details for userId:', user.id);
     const formDetails = await prisma.form_details.findFirst({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
@@ -146,16 +133,7 @@ app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
       }
     });
 
-    console.log('Form details lookup result:', {
-      found: !!formDetails,
-      formId: formDetails?.id,
-      userId: formDetails?.userId,
-      hasApiJson: !!formDetails?.api_out_json,
-      createdAt: formDetails?.createdAt
-    });
-
     if (!formDetails?.api_out_json) {
-      console.log('No investment data found for user:', user.id);
       return res.status(404).json({ 
         message: 'No investment data found for user',
         debug: { 
@@ -166,14 +144,13 @@ app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
       });
     }
 
-    console.log('Successfully found investment data');
     return res.json(formDetails.api_out_json);
 
   } catch (error: any) {
     console.error('Detailed error in /api/investment endpoint:', {
       error: error.message,
-      code: error.code,
-      meta: error.meta,
+      code: error?.code,
+      meta: error?.meta,
       stack: error.stack,
       clerkId,
       timestamp: new Date().toISOString()
@@ -183,16 +160,16 @@ app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? {
         message: error.message,
-        code: error.code,
+        code: error?.code,
         type: error.name,
-        meta: error.meta
+        meta: error?.meta
       } : 'An error occurred'
     });
   }
 });
 
 // Check if user exists
-app.get('/api/check-user/:clerkId', async (req: Request, res: Response) => {
+app.get('/api/check-user/:clerkId', async (req: Request<{ clerkId: string }>, res: Response) => {
   try {
     console.log('=== Check User Request ===');
     console.log('Checking user existence for clerkId:', req.params.clerkId);
@@ -214,7 +191,7 @@ app.get('/api/check-user/:clerkId', async (req: Request, res: Response) => {
 });
 
 // Create or update user
-app.post('/api/sync-user', async (req: Request, res: Response) => {
+app.post('/api/sync-user', async (req: Request<{ body: { clerkId: string, email: string } }>, res: Response) => {
   try {
     console.log('=== Sync User Request ===');
     const { clerkId, email } = req.body;
@@ -283,7 +260,7 @@ app.post('/api/sync-user', async (req: Request, res: Response) => {
 });
 
 // Submit form endpoint
-app.post('/api/submit-form', async (req: Request, res: Response) => {
+app.post('/api/submit-form', async (req: Request<{ body: { clerkId: string, formData: any } }>, res: Response) => {
   try {
     const { clerkId, formData } = req.body;
 
@@ -373,16 +350,12 @@ app.post('/api/submit-form', async (req: Request, res: Response) => {
   }
 });
 
-// Global error handling middleware
+// Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('=== Server Error ===');
-  console.error('Error:', err);
-  console.error('Stack:', err.stack);
-  res.status(500).json({ 
-    error: 'Internal server error', 
-    details: err.message,
-    code: err.code,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  console.error('Global error handler caught:', err);
+  res.status(500).json({
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred'
   });
 });
 
