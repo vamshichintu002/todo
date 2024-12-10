@@ -1,4 +1,4 @@
-interface FormData {
+export interface FormData {
   name: string;
   phone: string;
   age: number;
@@ -34,13 +34,13 @@ interface FormData {
   additionalComments: string;
 }
 
-interface FinancialGoal {
+export interface FinancialGoal {
   goal_type: string;
   target_amount: number;
   timeline_years: number;
 }
 
-interface ApiRequestData {
+export interface ApiRequestData {
   age: number;
   employment_status: string;
   annual_income: number;
@@ -64,11 +64,11 @@ interface ApiRequestData {
 }
 
 export class FormDataTransformer {
-  private static capitalizeFirstLetter(str: string): string {
+  static capitalizeFirstLetter(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   }
 
-  private static formatInvestmentPreference(pref: string): string {
+  static formatInvestmentPreference(pref: string): string {
     const prefMap: { [key: string]: string } = {
       'stocks': 'Stocks',
       'mutualFunds': 'Mutual_Funds',
@@ -80,7 +80,7 @@ export class FormDataTransformer {
     return prefMap[pref] || pref;
   }
 
-  private static formatInvestmentHorizon(horizon: string): string {
+  static formatInvestmentHorizon(horizon: string): string {
     const horizonMap: { [key: string]: string } = {
       'short': 'Short-term',
       'medium': 'Medium-term',
@@ -89,7 +89,7 @@ export class FormDataTransformer {
     return horizonMap[horizon] || horizon;
   }
 
-  private static toBooleanString(value: boolean): string {
+  static toBooleanString(value: boolean): string {
     return value ? 'True' : 'False';
   }
 

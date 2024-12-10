@@ -12,7 +12,10 @@
     "lib": ["ES2023", "DOM"],
     "types": ["node", "vite/client"],
     "allowJs": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
   },
   "include": ["src/server/**/*", "src/lib/**/*", "src/utils/**/*"],
   "exclude": ["node_modules"]

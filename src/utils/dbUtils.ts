@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { FormDataTransformer } from './formDataTransformer';
+import { FormDataTransformer } from './formDataTransformer.ts';
 
 const pool = new Pool({
   user: 'your_username',
