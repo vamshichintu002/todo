@@ -13,9 +13,7 @@
     "types": ["node", "vite/client"],
     "allowJs": true,
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
-    "emitDeclarationOnly": false,
-    "noEmit": false
+    "noEmit": true
   },
   "include": ["src/server/**/*", "src/lib/**/*", "src/utils/**/*"],
   "exclude": ["node_modules"]
