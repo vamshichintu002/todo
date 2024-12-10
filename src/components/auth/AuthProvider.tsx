@@ -116,9 +116,9 @@ function AuthSync() {
         } else {
           throw new Error('Sync failed: ' + (result.message || 'Unknown error'));
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error in checkAndSyncUser:', error);
-        setError(error.message || 'Failed to sync user data');
+        setError(error instanceof Error ? error.message : 'Failed to sync user data');
       }
     }
 

@@ -1,9 +1,9 @@
 import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import cors from 'cors';
-import { prisma } from '../lib/database';
+import { prisma } from '../lib/database.js';
 import { Prisma } from '@prisma/client';
-import FormDataTransformer from '../lib/form-data-transformer'; 
-import { analyzePortfolio } from '../utils/portfolioAnalyzer';
+import FormDataTransformer from '../lib/form-data-transformer.js'; 
+import { analyzePortfolio } from '../utils/portfolioAnalyzer.js';
 
 const app = express();
 
@@ -97,15 +97,15 @@ interface FormDetails {
   managementStyle: string;
   lifeChanges: string;
   comments: string;
-  createdAt: Date;
-  updatedAt: Date;
   json_data: any;
   api_out_json: any;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Investment data endpoint
 interface InvestmentParams { clerkId: string }
-const getInvestmentHandler: RequestHandler<InvestmentParams> = async (req, res, next) => {
+const getInvestmentHandler: RequestHandler<InvestmentParams> = async (req, res, next): Promise<void> => {
   try {
     const { clerkId } = req.params;
     
@@ -119,31 +119,7 @@ const getInvestmentHandler: RequestHandler<InvestmentParams> = async (req, res, 
     }
 
     const formDetails = await prisma.form_details.findFirst({
-      where: { userId: user.id },
-      select: {
-        id: true,
-        userId: true,
-        name: true,
-        phone: true,
-        age: true,
-        employmentStatus: true,
-        annualIncome: true,
-        maritalStatus: true,
-        selectedGoals: true,
-        investmentHorizon: true,
-        riskTolerance: true,
-        riskComfortLevel: true,
-        monthlyIncome: true,
-        monthlyExpenses: true,
-        selectedInvestments: true,
-        managementStyle: true,
-        lifeChanges: true,
-        comments: true,
-        json_data: true,
-        api_out_json: true,
-        createdAt: true,
-        updatedAt: true
-      }
+      where: { userId: user.id }
     });
 
     res.json({ user, formDetails });
@@ -155,105 +131,55 @@ const getInvestmentHandler: RequestHandler<InvestmentParams> = async (req, res, 
 app.get('/api/investment/:clerkId', getInvestmentHandler);
 
 // Check if user exists
-interface CheckUserParams { clerkId: string }
-const checkUserHandler: RequestHandler<CheckUserParams> = async (req, res) => {
+interface CheckUserParams {
+  clerkId: string;
+}
+
+const checkUserHandler: RequestHandler<CheckUserParams> = async (req, res, next): Promise<void> => {
   try {
-    console.log('=== Check User Request ===');
-    console.log('Checking user existence for clerkId:', req.params.clerkId);
-    
+    const { clerkId } = req.params;
     const user = await prisma.users.findUnique({
-      where: { clerkId: req.params.clerkId }
+      where: { clerkId }
     });
-    
-    console.log('User check result:', user);
-    res.json({ exists: !!user, user });
-  } catch (error: any) {
-    console.error('Error checking user:', error);
-    res.status(500).json({ 
-      error: 'Failed to check user', 
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.json({ exists: !!user });
+  } catch (error) {
+    next(error);
   }
 };
 
 app.get('/api/check-user/:clerkId', checkUserHandler);
 
 // Create or update user
-interface SyncUserBody { clerkId: string, email: string }
-const syncUserHandler: RequestHandler<{ clerkId: string }, any, SyncUserBody> = async (req, res) => {
+interface SyncUserBody {
+  clerkId: string;
+  email: string;
+}
+
+const syncUserHandler: RequestHandler<{ clerkId: string }, any, SyncUserBody> = async (req, res, next): Promise<void> => {
   try {
-    console.log('=== Sync User Request ===');
     const { clerkId, email } = req.body;
-    
-    if (!clerkId || !email) {
-      console.error('Missing required fields:', { clerkId, email });
-      return res.status(400).json({ 
-        error: 'Missing required fields', 
-        details: 'Both clerkId and email are required' 
-      });
-    }
 
-    console.log('Attempting to sync user:', { clerkId, email });
-
-    // First check if user exists
-    const existingUser = await prisma.users.findUnique({
-      where: { clerkId }
+    const user = await prisma.users.upsert({
+      where: { clerkId },
+      update: { email },
+      create: { clerkId, email }
     });
 
-    console.log('Existing user check result:', existingUser);
-
-    let user;
-    if (!existingUser) {
-      console.log('Creating new user...');
-      try {
-        user = await prisma.users.create({
-          data: {
-            clerkId,
-            email,
-          },
-        });
-        console.log('Successfully created user:', user);
-      } catch (createError: any) {
-        console.error('Error creating user:', createError);
-        throw createError;
-      }
-    } else {
-      console.log('Updating existing user...');
-      try {
-        user = await prisma.users.update({
-          where: { clerkId },
-          data: { email },
-        });
-        console.log('Successfully updated user:', user);
-      } catch (updateError: any) {
-        console.error('Error updating user:', updateError);
-        throw updateError;
-      }
-    }
-
-    res.json({ 
-      success: true,
-      user,
-      exists: !!existingUser,
-      message: existingUser ? 'User updated' : 'User created'
-    });
-  } catch (error: any) {
-    console.error('Error in sync-user endpoint:', error);
-    res.status(500).json({ 
-      error: 'Failed to sync user', 
-      details: error.message,
-      code: error.code,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.json(user);
+  } catch (error) {
+    next(error);
   }
 };
 
 app.post('/api/sync-user', syncUserHandler);
 
 // Submit form endpoint
-interface SubmitFormBody { clerkId: string, formData: any }
-const submitFormHandler: RequestHandler<{ clerkId: string }, any, SubmitFormBody> = async (req, res, next) => {
+interface SubmitFormBody {
+  clerkId: string;
+  formData: any;
+}
+
+const submitFormHandler: RequestHandler<{ clerkId: string }, any, SubmitFormBody> = async (req, res, next): Promise<void> => {
   try {
     const { clerkId, formData } = req.body;
     
@@ -274,23 +200,21 @@ const submitFormHandler: RequestHandler<{ clerkId: string }, any, SubmitFormBody
 
     const formDataToSave = {
       userId: user.id,
-      name: formData.name,
-      phone: formData.phone,
-      age: formData.age,
-      employmentStatus: formData.employmentStatus,
-      annualIncome: formData.annualIncome,
-      maritalStatus: formData.maritalStatus,
-      selectedGoals: formData.selectedGoals,
-      investmentHorizon: formData.investmentHorizon,
-      riskTolerance: formData.riskTolerance,
-      riskComfortLevel: formData.riskComfortLevel,
-      monthlyIncome: formData.monthlyIncome,
-      monthlyExpenses: formData.monthlyExpenses,
-      selectedInvestments: formData.selectedInvestments,
-      managementStyle: formData.managementStyle,
-      lifeChanges: formData.lifeChanges,
-      comments: formData.comments,
-      json_data: formData
+      name: formData.name || '',
+      phone: formData.phone || '',
+      age: Number(formData.age) || 0,
+      employmentStatus: formData.employmentStatus || '',
+      annualIncome: Number(formData.annualIncome) || 0,
+      maritalStatus: formData.maritalStatus || '',
+      selectedGoals: formData.selectedGoals || [],
+      investmentHorizon: formData.investmentHorizon || '',
+      riskTolerance: formData.riskTolerance || '',
+      riskComfortLevel: Number(formData.riskComfortLevel) || 0,
+      monthlyIncome: Number(formData.monthlyIncome) || 0,
+      monthlyExpenses: Number(formData.monthlyExpenses) || 0,
+      selectedInvestments: formData.selectedInvestments || [],
+      managementStyle: formData.managementStyle || '',
+      json_data: JSON.stringify(formData)  // Convert to string for storage
     };
 
     if (existingForm) {

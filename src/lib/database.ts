@@ -33,11 +33,11 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Listen for Prisma events
-prisma.$on('error', (e: Prisma.LogEvent) => {
+(prisma as any).$on('error', (e: Prisma.LogEvent) => {
   console.error('Prisma Error:', e);
 });
 
-prisma.$on('warn', (e: Prisma.LogEvent) => {
+(prisma as any).$on('warn', (e: Prisma.LogEvent) => {
   console.warn('Prisma Warning:', e);
 });
 
