@@ -1,20 +1,45 @@
-[
-build
-]
-  command = "npm run build"
-  publish = "dist"
-  functions = "src/server"
+[build]
+command = "npm run build"
+publish = "dist"
+functions = "netlify/functions"
 
-[[
-redirects
-]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
+[functions]
+directory = "netlify/functions"
+node_bundler = "esbuild"
 
-[[
-redirects
-]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[[redirects]]
+from = "/api/sync-user"
+to = "/.netlify/functions/api"
+status = 200
+force = true
+
+[[redirects]]
+from = "/api/submit-form"
+to = "/.netlify/functions/api"
+status = 200
+force = true
+
+[[redirects]]
+from = "/api/get-investment-data"
+to = "/.netlify/functions/api"
+status = 200
+force = true
+
+[[redirects]]
+from = "/api/*"
+to = "/.netlify/functions/:splat"
+status = 200
+force = true
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+force = true
+
+[dev]
+framework = "#custom"
+command = "npm run dev"
+targetPort = 5173
+port = 8888
+publish = "dist"
