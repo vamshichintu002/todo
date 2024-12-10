@@ -51,12 +51,41 @@ app.get('/api/test', (req: Request, res: Response) => {
   res.json({ message: 'API is working' });
 });
 
+// Test database connection endpoint
+app.get('/api/test-db', async (req: Request, res: Response) => {
+  try {
+    console.log('Testing database connection...');
+    const result = await prisma.$queryRaw`SELECT current_timestamp`;
+    console.log('Database connection test successful:', result);
+    
+    const userCount = await prisma.users.count();
+    console.log('Total users in database:', userCount);
+    
+    return res.json({ 
+      status: 'success',
+      timestamp: result,
+      userCount
+    });
+  } catch (error: any) {
+    console.error('Database test failed:', {
+      error: error.message,
+      code: error.code,
+      meta: error.meta
+    });
+    return res.status(500).json({
+      status: 'error',
+      message: error.message,
+      code: error.code
+    });
+  }
+});
+
 // Investment data endpoint
 app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
   const { clerkId } = req.params;
   
   try {
-    console.log(`[${new Date().toISOString()}] Fetching investment data for clerkId:`, clerkId);
+    console.log(`[${new Date().toISOString()}] Starting investment data fetch for clerkId:`, clerkId);
     
     if (!clerkId) {
       console.log('Missing clerkId parameter in request');
@@ -65,54 +94,86 @@ app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
 
     // Test database connection
     try {
-      await prisma.$queryRaw`SELECT 1`;
-      console.log('Database connection successful');
+      console.log('Testing database connection...');
+      const result = await prisma.$queryRaw`SELECT current_timestamp`;
+      console.log('Database connection successful:', result);
     } catch (dbError: any) {
-      console.error('Database connection failed:', dbError);
+      console.error('Database connection failed:', {
+        error: dbError.message,
+        code: dbError.code,
+        meta: dbError.meta
+      });
       return res.status(500).json({ 
         message: 'Database connection failed',
-        error: process.env.NODE_ENV === 'development' ? dbError.message : 'Database error'
+        error: process.env.NODE_ENV === 'development' ? {
+          message: dbError.message,
+          code: dbError.code
+        } : 'Database error'
       });
     }
 
+    console.log('Looking up user with clerkId:', clerkId);
     const user = await prisma.users.findUnique({
-      where: { clerkId }
+      where: { clerkId },
+      select: {
+        id: true,
+        clerkId: true,
+        email: true,
+        createdAt: true
+      }
     });
 
-    console.log('User query result:', user ? 'Found' : 'Not found');
+    console.log('User lookup result:', JSON.stringify(user, null, 2));
 
     if (!user) {
+      console.log('User not found for clerkId:', clerkId);
       return res.status(404).json({ 
         message: 'User not found',
         debug: { clerkId }
       });
     }
 
+    console.log('Found user, looking up form details for userId:', user.id);
     const formDetails = await prisma.form_details.findFirst({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
       select: {
+        id: true,
+        userId: true,
         api_out_json: true,
         createdAt: true,
         updatedAt: true
       }
     });
 
-    console.log('Form details found:', formDetails ? 'Yes' : 'No');
+    console.log('Form details lookup result:', {
+      found: !!formDetails,
+      formId: formDetails?.id,
+      userId: formDetails?.userId,
+      hasApiJson: !!formDetails?.api_out_json,
+      createdAt: formDetails?.createdAt
+    });
 
     if (!formDetails?.api_out_json) {
+      console.log('No investment data found for user:', user.id);
       return res.status(404).json({ 
         message: 'No investment data found for user',
-        debug: { userId: user.id }
+        debug: { 
+          userId: user.id,
+          clerkId: user.clerkId,
+          formFound: !!formDetails
+        }
       });
     }
 
-    console.log('Successfully returning investment data');
+    console.log('Successfully found investment data');
     return res.json(formDetails.api_out_json);
 
   } catch (error: any) {
     console.error('Detailed error in /api/investment endpoint:', {
       error: error.message,
+      code: error.code,
+      meta: error.meta,
       stack: error.stack,
       clerkId,
       timestamp: new Date().toISOString()
@@ -122,8 +183,9 @@ app.get('/api/investment/:clerkId', async (req: Request, res: Response) => {
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? {
         message: error.message,
+        code: error.code,
         type: error.name,
-        stack: error.stack
+        meta: error.meta
       } : 'An error occurred'
     });
   }
