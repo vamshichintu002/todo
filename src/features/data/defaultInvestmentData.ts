@@ -1,10 +1,13 @@
-import { InvestmentData } from '../types/investment';
-import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl, handleApiError } from '../../lib/api-config';
+import type { InvestmentData } from '../types';
 
 export async function getDefaultInvestmentData(clerkId: string): Promise<InvestmentData> {
   try {
     console.log('Fetching investment data for user:', clerkId);
-    const response = await fetch(`http://localhost:3001/api/investment/${clerkId}`);
+    const response = await fetch(getApiUrl(`/api/investment/${clerkId}`), {
+      credentials: 'include',
+    });
+    
     console.log('API response status:', response.status);
     
     if (!response.ok) {
@@ -21,8 +24,9 @@ export async function getDefaultInvestmentData(clerkId: string): Promise<Investm
     
     return data as InvestmentData;
   } catch (error) {
-    console.error('Error fetching investment data:', error);
-    throw error; // Re-throw the error instead of returning fallback data
+    const handledError = handleApiError(error);
+    console.error('Error fetching investment data:', handledError);
+    throw handledError;
   }
 }
 

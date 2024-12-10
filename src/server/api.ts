@@ -6,9 +6,20 @@ import { analyzePortfolio } from '../utils/portfolioAnalyzer';
 
 const app = express();
 
-// Enable CORS with specific options
+// CORS configuration with environment-based origins
+const allowedOrigins = [
+  process.env.NEXT_PUBLIC_VERCEL_URL && `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`,
+  'http://localhost:5173'
+].filter(Boolean);
+
 app.use(cors({
-  origin: 'http://localhost:5173', // Allow only our frontend
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -271,7 +282,7 @@ app.post('/api/submit-form', async (req, res) => {
   }
 });
 
-// Error handling middleware
+// Global error handling middleware
 app.use((err, req, res, next) => {
   console.error('=== Server Error ===');
   console.error('Error:', err);

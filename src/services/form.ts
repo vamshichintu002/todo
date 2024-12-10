@@ -1,4 +1,5 @@
-import { FormData } from '../Form/types/form';
+import { API_CONFIG, getApiUrl, handleApiError } from '../lib/api-config';
+import type { FormData } from '../types';
 
 export const submitForm = async (formData: FormData, clerkId: string) => {
   try {
@@ -13,11 +14,10 @@ export const submitForm = async (formData: FormData, clerkId: string) => {
       emergencyFundMonths: parseInt(formData.emergencyFundMonths || '0'),
     };
 
-    const response = await fetch('http://localhost:3001/api/submit-form', {
+    const response = await fetch(getApiUrl('/api/submit-form'), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: API_CONFIG.headers,
+      credentials: 'include',
       body: JSON.stringify({
         clerkId: clerkId,
         formData: processedData,
@@ -32,7 +32,8 @@ export const submitForm = async (formData: FormData, clerkId: string) => {
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('Error submitting form:', error);
-    throw error;
+    const handledError = handleApiError(error);
+    console.error('Error submitting form:', handledError);
+    throw handledError;
   }
 };
