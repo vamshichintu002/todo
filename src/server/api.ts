@@ -8,9 +8,11 @@ const app = express();
 
 // Enable CORS with specific options
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const PORT = process.env.PORT || 3001;
 
+// Configure CORS
 app.use(cors({
-  origin: FRONTEND_URL, // Use environment variable with localhost fallback
+  origin: [FRONTEND_URL, 'https://investoaitest.netlify.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -31,7 +33,7 @@ app.use((req, res, next) => {
 
 // Test endpoint
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'API is working' });
+  res.json({ message: 'API is working!' });
 });
 
 // Investment data endpoint
@@ -289,8 +291,6 @@ app.use((err, req, res, next) => {
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
-
-const PORT = 3001;
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

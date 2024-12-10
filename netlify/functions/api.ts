@@ -4,9 +4,10 @@ import FormDataTransformer from '../../src/lib/form-data-transformer';
 import { analyzePortfolio } from '../../src/utils/portfolioAnalyzer';
 
 const headers = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://investoaitest.netlify.app',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Credentials': 'true',
   'Content-Type': 'application/json'
 };
 
@@ -26,6 +27,14 @@ export const handler: Handler = async (event, context) => {
   try {
     // Route handling
     switch (path) {
+      case '/api/test': {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ message: 'API is working!' })
+        };
+      }
+
       case '/api/sync-user': {
         const { clerkId, email } = body;
         console.log('=== Sync User Request ===', { clerkId, email });
@@ -115,7 +124,7 @@ export const handler: Handler = async (event, context) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Internal Server Error' })
+      body: JSON.stringify({ error: 'Internal Server Error', details: error.message })
     };
   }
 };
