@@ -1,11 +1,15 @@
 import { InvestmentData } from '../types/investment';
-import { useAuth } from '@clerk/clerk-react';
 
 export async function getDefaultInvestmentData(clerkId: string): Promise<InvestmentData> {
   try {
     console.log('Fetching investment data for user:', clerkId);
     const response = await fetch(`http://localhost:3001/api/investment/${clerkId}`);
     console.log('API response status:', response.status);
+    
+    if (response.status === 404) {
+      console.log('No existing investment data found for new user');
+      return fallbackDefaultInvestmentData;
+    }
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -16,13 +20,14 @@ export async function getDefaultInvestmentData(clerkId: string): Promise<Investm
     console.log('API data received:', data);
     
     if (!data) {
-      throw new Error('No data received from API');
+      console.log('No data received, using fallback data');
+      return fallbackDefaultInvestmentData;
     }
     
     return data as InvestmentData;
   } catch (error) {
     console.error('Error fetching investment data:', error);
-    throw error; // Re-throw the error instead of returning fallback data
+    return fallbackDefaultInvestmentData; // Return fallback data instead of throwing
   }
 }
 

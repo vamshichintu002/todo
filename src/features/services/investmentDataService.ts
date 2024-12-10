@@ -60,10 +60,12 @@ class InvestmentDataService implements InvestmentDataSource {
       });
     } catch (error) {
       console.error('Failed to initialize investment data:', error);
-      // Refresh the page after a short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Use fallback data for new users instead of reloading
+      this.updateState({
+        data: fallbackDefaultInvestmentData,
+        isLoading: false,
+        error: null
+      });
     }
   }
 

@@ -158,10 +158,9 @@ function App() {
 
     try {
       setIsSubmitting(true);
-      
       const primaryEmail = user.primaryEmailAddress?.emailAddress;
       if (!primaryEmail) {
-        throw new Error('User email not found. Please ensure your email is verified.');
+        throw new Error('Please verify your email address to continue.');
       }
 
       await submitForm(formData, user.id, primaryEmail);
@@ -169,7 +168,8 @@ function App() {
       navigate('/investment-dashboard');
     } catch (error) {
       console.error('Error submitting form:', error);
-      alert('An error occurred while submitting the form. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while submitting the form. Please try again.';
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
