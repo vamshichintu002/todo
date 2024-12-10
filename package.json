@@ -8,6 +8,7 @@
     "dev:frontend": "vite",
     "dev:backend": "tsx watch src/server/api.ts",
     "build": "vite build && prisma generate",
+    "postinstall": "prisma generate",
     "lint": "eslint .",
     "preview": "vite preview",
     "netlify:dev": "netlify dev"

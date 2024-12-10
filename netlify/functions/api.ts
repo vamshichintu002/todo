@@ -1,7 +1,10 @@
 import { Handler } from '@netlify/functions';
-import { prisma } from '../../src/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 import FormDataTransformer from '../../src/lib/form-data-transformer';
 import { analyzePortfolio } from '../../src/utils/portfolioAnalyzer';
+
+// Initialize Prisma Client
+const prisma = new PrismaClient();
 
 const headers = {
   'Access-Control-Allow-Origin': 'https://investoaitest.netlify.app',
@@ -47,7 +50,7 @@ export const handler: Handler = async (event, context) => {
           };
         }
 
-        const user = await prisma.user.upsert({
+        const user = await prisma.users.upsert({
           where: { clerkId },
           update: { email },
           create: { clerkId, email }
@@ -57,6 +60,53 @@ export const handler: Handler = async (event, context) => {
           statusCode: 200,
           headers,
           body: JSON.stringify(user)
+        };
+      }
+
+      case '/api/investment/:clerkId': {
+        const clerkId = event.path.split('/').pop();
+        
+        if (!clerkId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'Missing clerkId parameter' })
+          };
+        }
+
+        // First get the user
+        const user = await prisma.users.findUnique({
+          where: { clerkId }
+        });
+
+        if (!user) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ message: 'User not found' })
+          };
+        }
+
+        // Then get their form details
+        const formDetails = await prisma.form_details.findUnique({
+          where: { userId: user.id },
+          select: {
+            api_out_json: true
+          }
+        });
+
+        if (!formDetails?.api_out_json) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ message: 'No investment data found for user' })
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(formDetails.api_out_json)
         };
       }
 
@@ -71,12 +121,25 @@ export const handler: Handler = async (event, context) => {
           };
         }
 
+        // Get the user first
+        const user = await prisma.users.findUnique({
+          where: { clerkId }
+        });
+
+        if (!user) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ error: 'User not found' })
+          };
+        }
+
         const transformer = new FormDataTransformer(formData);
         const transformedData = transformer.transform();
 
-        const investment = await prisma.investment.create({
+        const formDetails = await prisma.form_details.create({
           data: {
-            userId: clerkId,
+            userId: user.id,
             ...transformedData
           }
         });
@@ -84,7 +147,7 @@ export const handler: Handler = async (event, context) => {
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify(investment)
+          body: JSON.stringify(formDetails)
         };
       }
 
@@ -99,7 +162,7 @@ export const handler: Handler = async (event, context) => {
           };
         }
 
-        const investments = await prisma.investment.findMany({
+        const investments = await prisma.investments.findMany({
           where: { userId: clerkId }
         });
 
@@ -124,7 +187,13 @@ export const handler: Handler = async (event, context) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Internal Server Error', details: error.message })
+      body: JSON.stringify({ 
+        error: 'Internal Server Error', 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      })
     };
+  } finally {
+    await prisma.$disconnect();
   }
 };
