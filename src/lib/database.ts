@@ -6,15 +6,14 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' 
     ? { rejectUnauthorized: false } 
-    : false
+    : false,
+  max: 1, // Limit connections for serverless
+  idleTimeoutMillis: 30000
 });
 
 // Initialize Prisma Client with logging in development
 const prismaClientOptions: Prisma.PrismaClientOptions = {
-  log: [
-    { level: 'warn', emit: 'event' },
-    { level: 'error', emit: 'event' }
-  ],
+  log: ['query', 'error', 'warn'],
   datasources: {
     db: {
       url: process.env.DATABASE_URL
@@ -26,10 +25,31 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-const prisma = global.prisma || new PrismaClient(prismaClientOptions);
+// Function to create Prisma client with connection retry
+async function createPrismaClient() {
+  const client = new PrismaClient(prismaClientOptions);
+  
+  try {
+    // Test the connection
+    await client.$connect();
+    console.log('Prisma connection established successfully');
+    return client;
+  } catch (error) {
+    console.error('Failed to connect to database:', error);
+    throw error;
+  }
+}
 
-if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma;
+// Initialize Prisma client with connection handling
+let prisma: PrismaClient;
+
+if (process.env.NODE_ENV === 'production') {
+  prisma = new PrismaClient(prismaClientOptions);
+} else {
+  if (!global.prisma) {
+    global.prisma = new PrismaClient(prismaClientOptions);
+  }
+  prisma = global.prisma;
 }
 
 // Listen for Prisma events
@@ -41,10 +61,23 @@ if (process.env.NODE_ENV !== 'production') {
   console.warn('Prisma Warning:', e);
 });
 
-// Helper function to get database connection
-export async function getDbConnection() {
-  const client = await pool.connect();
-  return client;
+// Helper function to get database connection with retry
+export async function getDbConnection(retries = 3) {
+  let lastError;
+  
+  for (let i = 0; i < retries; i++) {
+    try {
+      const client = await pool.connect();
+      console.log('Database connection established successfully');
+      return client;
+    } catch (error) {
+      console.error(`Failed to connect to database (attempt ${i + 1}/${retries}):`, error);
+      lastError = error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i))); // Exponential backoff
+    }
+  }
+  
+  throw lastError;
 }
 
 // Error handling wrapper for database operations
@@ -88,6 +121,17 @@ export async function withPrisma<T>(
   }
   
   throw lastError;
+}
+
+// Cleanup function for serverless environment
+export async function cleanupConnections() {
+  try {
+    await prisma.$disconnect();
+    await pool.end();
+    console.log('Database connections cleaned up');
+  } catch (error) {
+    console.error('Error cleaning up database connections:', error);
+  }
 }
 
 export { prisma, pool };

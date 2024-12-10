@@ -3,36 +3,19 @@
   "builds": [
     {
       "src": "src/server/api.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["tsconfig.server.json"]
-      }
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "use": "@vercel/node"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "src/server/api.ts"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "src/server/api.ts"
     }
   ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
-        { "key": "Access-Control-Allow-Origin", "value": "https://todo-three-lyart-41.vercel.app" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,DELETE,PATCH,POST,PUT,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
-      ]
+  "functions": {
+    "src/server/api.ts": {
+      "memory": 1024,
+      "maxDuration": 10
     }
-  ]
+  }
 }
