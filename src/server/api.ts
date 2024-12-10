@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import cors from 'cors';
 import { prisma } from '../lib/database';
 import { Prisma } from '@prisma/client';
@@ -30,21 +30,25 @@ app.use(cors({
 app.use(express.json());
 
 // Debug middleware to log all requests
-app.use((req: Request, res: Response, next: NextFunction) => {
+const debugMiddleware: RequestHandler = (req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
   console.log('Query:', JSON.stringify(req.query, null, 2));
   console.log('Body:', JSON.stringify(req.body, null, 2));
   next();
-});
+};
+
+app.use(debugMiddleware);
 
 // Test endpoint
-app.get('/api/test', (req: Request, res: Response) => {
+const testHandler: RequestHandler = (req, res) => {
   res.json({ message: 'API is working' });
-});
+};
+
+app.get('/api/test', testHandler);
 
 // Test database connection endpoint
-app.get('/api/test-db', async (req: Request, res: Response) => {
+const testDbHandler: RequestHandler = async (req, res) => {
   try {
     console.log('Testing database connection...');
     const result = await prisma.$queryRaw`SELECT current_timestamp`;
@@ -70,10 +74,13 @@ app.get('/api/test-db', async (req: Request, res: Response) => {
       code: error?.code
     });
   }
-});
+};
+
+app.get('/api/test-db', testDbHandler);
 
 // Investment data endpoint
-app.get('/api/investment/:clerkId', async (req: Request<{ clerkId: string }>, res: Response) => {
+interface InvestmentParams { clerkId: string }
+const getInvestmentHandler: RequestHandler<InvestmentParams> = async (req, res) => {
   const { clerkId } = req.params;
   
   try {
@@ -166,10 +173,13 @@ app.get('/api/investment/:clerkId', async (req: Request<{ clerkId: string }>, re
       } : 'An error occurred'
     });
   }
-});
+};
+
+app.get('/api/investment/:clerkId', getInvestmentHandler);
 
 // Check if user exists
-app.get('/api/check-user/:clerkId', async (req: Request<{ clerkId: string }>, res: Response) => {
+interface CheckUserParams { clerkId: string }
+const checkUserHandler: RequestHandler<CheckUserParams> = async (req, res) => {
   try {
     console.log('=== Check User Request ===');
     console.log('Checking user existence for clerkId:', req.params.clerkId);
@@ -188,10 +198,13 @@ app.get('/api/check-user/:clerkId', async (req: Request<{ clerkId: string }>, re
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
-});
+};
+
+app.get('/api/check-user/:clerkId', checkUserHandler);
 
 // Create or update user
-app.post('/api/sync-user', async (req: Request<{ body: { clerkId: string, email: string } }>, res: Response) => {
+interface SyncUserBody { clerkId: string, email: string }
+const syncUserHandler: RequestHandler<{ clerkId: string }, any, SyncUserBody> = async (req, res) => {
   try {
     console.log('=== Sync User Request ===');
     const { clerkId, email } = req.body;
@@ -257,10 +270,13 @@ app.post('/api/sync-user', async (req: Request<{ body: { clerkId: string, email:
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
-});
+};
+
+app.post('/api/sync-user', syncUserHandler);
 
 // Submit form endpoint
-app.post('/api/submit-form', async (req: Request<{ body: { clerkId: string, formData: any } }>, res: Response) => {
+interface SubmitFormBody { clerkId: string, formData: any }
+const submitFormHandler: RequestHandler<{ clerkId: string }, any, SubmitFormBody> = async (req, res) => {
   try {
     const { clerkId, formData } = req.body;
 
@@ -348,7 +364,9 @@ app.post('/api/submit-form', async (req: Request<{ body: { clerkId: string, form
       details: error.message
     });
   }
-});
+};
+
+app.post('/api/submit-form', submitFormHandler);
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
