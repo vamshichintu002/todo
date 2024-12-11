@@ -36,9 +36,16 @@ export default defineConfig({
             '@radix-ui/react-toast',
           ],
         },
-        assetFileNames: 'assets/[name].[hash].[ext]',
-        chunkFileNames: 'assets/[name].[hash].js',
-        entryFileNames: 'assets/[name].[hash].js',
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(assetInfo.name)) {
+            return `assets/images/[name].[hash][extname]`;
+          }
+          return `assets/[name].[hash][extname]`;
+        },
+        chunkFileNames: 'js/[name].[hash].js',
+        entryFileNames: 'js/[name].[hash].js',
       }
     },
     target: 'es2015',
@@ -54,5 +61,6 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     host: true
-  }
+  },
+  base: '/'
 });
