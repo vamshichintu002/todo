@@ -1,5 +1,6 @@
 import { InvestmentData, InvestmentDataSource } from '../types/investment';
 import { getDefaultInvestmentData, fallbackDefaultInvestmentData } from '../data/defaultInvestmentData';
+import { API_URL } from '../../config';
 
 export type InvestmentDataState = {
   data: InvestmentData | null;
@@ -52,7 +53,25 @@ class InvestmentDataService implements InvestmentDataSource {
     }
 
     try {
-      const data = await getDefaultInvestmentData(this.clerkId);
+      const response = await fetch(`${API_URL}/api/investment/${this.clerkId}`);
+      console.log('API response status:', response.status);
+
+      if (response.status === 404) {
+        console.log('No existing investment data found for new user');
+        this.updateState({
+          data: null,
+          isLoading: false,
+          error: null
+        });
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch investment data');
+      }
+
+      const data = await response.json();
       this.updateState({
         data,
         isLoading: false,
@@ -101,7 +120,25 @@ class InvestmentDataService implements InvestmentDataSource {
         error: null
       });
 
-      const data = await getDefaultInvestmentData(this.clerkId);
+      const response = await fetch(`${API_URL}/api/investment/${this.clerkId}`);
+      console.log('API response status:', response.status);
+
+      if (response.status === 404) {
+        console.log('No existing investment data found for new user');
+        this.updateState({
+          data: null,
+          isLoading: false,
+          error: null
+        });
+        return null;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch investment data');
+      }
+
+      const data = await response.json();
       this.updateState({
         data,
         isLoading: false,

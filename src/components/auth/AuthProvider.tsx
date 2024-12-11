@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react';
 import { investmentDataService } from '../../features/services/investmentDataService';
 import { API_URL } from '../../config';
 
-// Use the API instead of direct Prisma calls in the browser
-
+// Test API connection
 async function testAPI() {
   try {
     const response = await fetch(`${API_URL}/api/test`);
@@ -17,6 +16,7 @@ async function testAPI() {
   }
 }
 
+// Sync user to database
 async function syncUserToDatabase(clerkId: string, email: string) {
   try {
     console.log('=== Starting User Sync ===');
@@ -38,10 +38,14 @@ async function syncUserToDatabase(clerkId: string, email: string) {
     console.log('Sync response data:', data);
 
     if (!response.ok) {
-      throw new Error(data.details || 'Failed to sync user');
+      throw new Error(data.error || 'Failed to sync user');
     }
 
-    return data;
+    return {
+      success: true,
+      exists: data.exists,
+      message: data.message
+    };
   } catch (error) {
     console.error('Error in syncUserToDatabase:', error);
     throw error;
@@ -109,16 +113,11 @@ function AuthSync() {
         });
 
         const result = await syncUserToDatabase(userId, userEmail);
-        
-        if (result.success) {
-          console.log('Sync successful:', result);
-          setIsNewUser(!result.exists);
-        } else {
-          throw new Error('Sync failed: ' + (result.message || 'Unknown error'));
-        }
+        console.log('Sync successful:', result);
+        setIsNewUser(!result.exists);
       } catch (error) {
         console.error('Error in checkAndSyncUser:', error);
-        setError(error.message || 'Failed to sync user data');
+        setError(error instanceof Error ? error.message : 'Failed to sync user data');
       }
     }
 
@@ -165,14 +164,8 @@ function AuthSync() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-
-  if (!publishableKey) {
-    throw new Error('Missing Clerk Publishable Key');
-  }
-
   return (
-    <ClerkProvider publishableKey={publishableKey}>
+    <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
       <AuthSync />
       {children}
     </ClerkProvider>

@@ -24,13 +24,26 @@ export const handler: Handler = async (event, context) => {
     };
   }
 
+  // Extract the base path and parameters
   const path = event.path.replace('/.netlify/functions/api', '');
+  const segments = path.split('/');
+  const endpoint = segments[1];
+  const param = segments[2];
+  
+  console.log('Request details:', {
+    path,
+    segments,
+    endpoint,
+    param,
+    method: event.httpMethod
+  });
+
   const body = event.body ? JSON.parse(event.body) : {};
 
   try {
     // Route handling
-    switch (path) {
-      case '/api/test': {
+    switch (true) {
+      case endpoint === 'test': {
         return {
           statusCode: 200,
           headers,
@@ -38,7 +51,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case '/api/sync-user': {
+      case endpoint === 'sync-user': {
         const { clerkId, email } = body;
         console.log('=== Sync User Request ===', { clerkId, email });
         
@@ -63,8 +76,9 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case '/api/investment/:clerkId': {
-        const clerkId = event.path.split('/').pop();
+      case endpoint === 'investment' && !!param: {
+        const clerkId = param;
+        console.log('Fetching investment data for clerkId:', clerkId);
         
         if (!clerkId) {
           return {
@@ -78,6 +92,8 @@ export const handler: Handler = async (event, context) => {
         const user = await prisma.users.findUnique({
           where: { clerkId }
         });
+
+        console.log('Found user:', user);
 
         if (!user) {
           return {
@@ -95,6 +111,8 @@ export const handler: Handler = async (event, context) => {
           }
         });
 
+        console.log('Found form details:', formDetails);
+
         if (!formDetails?.api_out_json) {
           return {
             statusCode: 404,
@@ -110,7 +128,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case '/api/submit-form': {
+      case endpoint === 'submit-form': {
         const { clerkId, formData } = body;
         
         if (!clerkId || !formData) {
@@ -137,8 +155,14 @@ export const handler: Handler = async (event, context) => {
         const transformer = new FormDataTransformer(formData);
         const transformedData = transformer.transform();
 
-        const formDetails = await prisma.form_details.create({
-          data: {
+        // Create or update form details
+        const formDetails = await prisma.form_details.upsert({
+          where: { userId: user.id },
+          update: {
+            ...transformedData,
+            updatedAt: new Date()
+          },
+          create: {
             userId: user.id,
             ...transformedData
           }
@@ -151,7 +175,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case '/api/get-investment-data': {
+      case endpoint === 'get-investment-data': {
         const { clerkId } = body;
         
         if (!clerkId) {
@@ -176,10 +200,11 @@ export const handler: Handler = async (event, context) => {
       }
 
       default:
+        console.log('No matching route found for:', path);
         return {
           statusCode: 404,
           headers,
-          body: JSON.stringify({ error: 'Not Found' })
+          body: JSON.stringify({ error: 'Not Found', path })
         };
     }
   } catch (error) {
