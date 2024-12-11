@@ -12,12 +12,10 @@ const PORT = process.env.PORT || 3001;
 
 // Configure CORS
 app.use(cors({
-  origin: [FRONTEND_URL],
+  origin: [FRONTEND_URL, 'https://investoaitest.netlify.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Length', 'Content-Type'],
-  maxAge: 86400, // 24 hours in seconds
 }));
 
 app.use(express.json());

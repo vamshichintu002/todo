@@ -2,10 +2,11 @@ import { Pool } from 'pg';
 import { FormDataTransformer } from './formDataTransformer';
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // Required for Heroku/render.com
-  }
+  user: 'your_username',
+  host: 'localhost',
+  database: 'your_database',
+  password: 'your_password',
+  port: 5432,
 });
 
 export async function storeFormData(formData: any, clerkId: string) {

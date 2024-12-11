@@ -28,16 +28,9 @@ export const handler: Handler = async (event, context) => {
   const body = event.body ? JSON.parse(event.body) : {};
 
   try {
-    console.log('Request path:', path);
-    console.log('Request method:', event.httpMethod);
-    
-    // Extract clerkId from path for investment endpoint
-    const investmentMatch = path.match(/^\/api\/investment\/(.+)$/);
-    const clerkId = investmentMatch ? investmentMatch[1] : null;
-
     // Route handling
-    switch (true) {
-      case path === '/api/test': {
+    switch (path) {
+      case '/api/test': {
         return {
           statusCode: 200,
           headers,
@@ -45,7 +38,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case path === '/api/sync-user': {
+      case '/api/sync-user': {
         const { clerkId, email } = body;
         console.log('=== Sync User Request ===', { clerkId, email });
         
@@ -70,7 +63,9 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case Boolean(investmentMatch): {
+      case '/api/investment/:clerkId': {
+        const clerkId = event.path.split('/').pop();
+        
         if (!clerkId) {
           return {
             statusCode: 400,
@@ -79,24 +74,18 @@ export const handler: Handler = async (event, context) => {
           };
         }
 
-        console.log('=== Investment Data Request ===');
-        console.log('ClerkId:', clerkId);
-
         // First get the user
         const user = await prisma.users.findUnique({
           where: { clerkId }
         });
 
         if (!user) {
-          console.log('User not found for clerkId:', clerkId);
           return {
             statusCode: 404,
             headers,
             body: JSON.stringify({ message: 'User not found' })
           };
         }
-
-        console.log('Found user:', { id: user.id, clerkId: user.clerkId });
 
         // Then get their form details
         const formDetails = await prisma.form_details.findUnique({
@@ -107,7 +96,6 @@ export const handler: Handler = async (event, context) => {
         });
 
         if (!formDetails?.api_out_json) {
-          console.log('No investment data found for user:', clerkId);
           return {
             statusCode: 404,
             headers,
@@ -122,7 +110,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case path === '/api/submit-form': {
+      case '/api/submit-form': {
         const { clerkId, formData } = body;
         
         if (!clerkId || !formData) {
@@ -163,7 +151,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case path === '/api/get-investment-data': {
+      case '/api/get-investment-data': {
         const { clerkId } = body;
         
         if (!clerkId) {
@@ -188,7 +176,6 @@ export const handler: Handler = async (event, context) => {
       }
 
       default:
-        console.log('No matching route for path:', path);
         return {
           statusCode: 404,
           headers,

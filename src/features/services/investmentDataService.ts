@@ -1,6 +1,5 @@
 import { InvestmentData, InvestmentDataSource } from '../types/investment';
 import { getDefaultInvestmentData, fallbackDefaultInvestmentData } from '../data/defaultInvestmentData';
-import { API_URL } from '../../config';
 
 export type InvestmentDataState = {
   data: InvestmentData | null;
@@ -53,39 +52,7 @@ class InvestmentDataService implements InvestmentDataSource {
     }
 
     try {
-      // First sync the user
-      const syncResponse = await fetch(`${API_URL}/api/sync-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          clerkId: this.clerkId,
-          email: 'user@example.com' // This should come from Clerk
-        })
-      });
-
-      console.log('Sync response status:', syncResponse.status);
-      const syncData = await syncResponse.json();
-      console.log('Sync response data:', syncData);
-
-      if (!syncResponse.ok) {
-        throw new Error(syncData.error || 'Failed to sync user');
-      }
-
-      // Then get investment data
       const data = await getDefaultInvestmentData(this.clerkId);
-      
-      // 404 is expected for new users, use fallback data
-      if (data === fallbackDefaultInvestmentData) {
-        this.updateState({
-          data,
-          isLoading: false,
-          error: null
-        });
-        return;
-      }
-
       this.updateState({
         data,
         isLoading: false,
@@ -93,13 +60,32 @@ class InvestmentDataService implements InvestmentDataSource {
       });
     } catch (error) {
       console.error('Failed to initialize investment data:', error);
-      // Use fallback data instead of showing error
+      // Use fallback data for new users instead of reloading
       this.updateState({
         data: fallbackDefaultInvestmentData,
         isLoading: false,
         error: null
       });
     }
+  }
+
+  subscribe(callback: (state: InvestmentDataState) => void) {
+    this.subscribers.add(callback);
+    // Immediately call with current state
+    callback(this.state);
+    
+    return () => {
+      this.subscribers.delete(callback);
+    };
+  }
+
+  private updateState(newState: InvestmentDataState) {
+    this.state = newState;
+    this.notifySubscribers();
+  }
+
+  private notifySubscribers() {
+    this.subscribers.forEach(callback => callback(this.state));
   }
 
   async fetchInvestmentData(): Promise<InvestmentData | null> {
@@ -124,28 +110,12 @@ class InvestmentDataService implements InvestmentDataSource {
       return data;
     } catch (error) {
       console.error('Failed to fetch investment data:', error);
-      // Use fallback data instead of showing error
-      const fallbackData = fallbackDefaultInvestmentData;
-      this.updateState({
-        data: fallbackData,
-        isLoading: false,
-        error: null
-      });
-      return fallbackData;
+      // Refresh the page after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      return null;
     }
-  }
-
-  subscribe(callback: (state: InvestmentDataState) => void) {
-    this.subscribers.add(callback);
-    callback(this.state);
-    return () => {
-      this.subscribers.delete(callback);
-    };
-  }
-
-  private updateState(newState: InvestmentDataState) {
-    this.state = newState;
-    this.subscribers.forEach(callback => callback(newState));
   }
 
   async updateInvestmentData(newData: InvestmentData): Promise<InvestmentData> {
