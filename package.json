@@ -4,9 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "vite",
-    "dev:backend": "tsx watch src/server/api.ts",
+    "dev": "vite",
     "build": "prisma generate && vite build",
     "postinstall": "prisma generate",
     "lint": "eslint .",
@@ -54,6 +52,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
+    "netlify-cli": "^15.11.0",
     "postcss": "^8.4.35",
     "tsx": "^4.7.1",
     "typescript": "^5.4.2",

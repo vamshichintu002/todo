@@ -10,6 +10,7 @@ NODE_VERSION = "18"
 directory = "netlify/functions"
 node_bundler = "esbuild"
 included_files = ["prisma/**"]
+external_node_modules = ["@prisma/client"]
 
 [[headers]]
 for = "/assets/*"
@@ -32,20 +33,7 @@ for = "/*"
 X-Frame-Options = "DENY"
 X-XSS-Protection = "1; mode=block"
 X-Content-Type-Options = "nosniff"
-Content-Security-Policy = """
-  default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.com;
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.com;
-  style-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.com;
-  img-src 'self' data: blob: https: https://*.clerk.accounts.dev https://*.clerk.com;
-  connect-src 'self' https://* wss://* https://*.clerk.accounts.dev https://*.clerk.com;
-  font-src 'self' data: https://*.clerk.accounts.dev https://*.clerk.com;
-  frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com;
-  worker-src 'self' blob: https://*.clerk.accounts.dev https://*.clerk.com;
-  object-src 'none';
-  base-uri 'self';
-  form-action 'self' https://*.clerk.accounts.dev https://*.clerk.com;
-  frame-ancestors 'none';
-  """
+Referrer-Policy = "no-referrer"
 
 [[redirects]]
 from = "/api/*"
@@ -57,8 +45,3 @@ force = true
 from = "/*"
 to = "/index.html"
 status = 200
-
-[[headers]]
-for = "/*"
-[headers.values]
-Cache-Control = "no-cache"

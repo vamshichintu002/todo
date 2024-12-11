@@ -13,6 +13,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    port: 5173,
+    strictPort: true,
+    host: true,
+    proxy: {
+      '/.netlify/functions': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -56,11 +68,6 @@ export default defineConfig({
         drop_debugger: true
       }
     }
-  },
-  server: {
-    port: 5173,
-    strictPort: true,
-    host: true
   },
   base: '/'
 });

@@ -26,24 +26,25 @@ export const handler: Handler = async (event, context) => {
 
   // Extract the base path and parameters
   const path = event.path.replace('/.netlify/functions/api', '');
-  const segments = path.split('/');
-  const endpoint = segments[1];
-  const param = segments[2];
+  const segments = path.split('/').filter(Boolean);
+  const endpoint = segments[0];
+  const param = segments[1];
   
   console.log('Request details:', {
     path,
     segments,
     endpoint,
     param,
-    method: event.httpMethod
+    method: event.httpMethod,
+    body: event.body
   });
 
-  const body = event.body ? JSON.parse(event.body) : {};
-
   try {
+    const body = event.body ? JSON.parse(event.body) : {};
+
     // Route handling
     switch (true) {
-      case endpoint === 'test': {
+      case endpoint === 'test' && event.httpMethod === 'GET': {
         return {
           statusCode: 200,
           headers,
@@ -51,7 +52,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case endpoint === 'sync-user': {
+      case endpoint === 'sync-user' && event.httpMethod === 'POST': {
         const { clerkId, email } = body;
         console.log('=== Sync User Request ===', { clerkId, email });
         
@@ -76,7 +77,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case endpoint === 'investment' && !!param: {
+      case endpoint === 'investment' && event.httpMethod === 'GET': {
         const clerkId = param;
         console.log('Fetching investment data for clerkId:', clerkId);
         
@@ -128,7 +129,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case endpoint === 'submit-form': {
+      case endpoint === 'submit-form' && event.httpMethod === 'POST': {
         const { clerkId, formData } = body;
         
         if (!clerkId || !formData) {
@@ -175,7 +176,7 @@ export const handler: Handler = async (event, context) => {
         };
       }
 
-      case endpoint === 'get-investment-data': {
+      case endpoint === 'get-investment-data' && event.httpMethod === 'POST': {
         const { clerkId } = body;
         
         if (!clerkId) {
@@ -200,11 +201,15 @@ export const handler: Handler = async (event, context) => {
       }
 
       default:
-        console.log('No matching route found for:', path);
         return {
           statusCode: 404,
           headers,
-          body: JSON.stringify({ error: 'Not Found', path })
+          body: JSON.stringify({ 
+            error: 'Not Found', 
+            path: event.path,
+            endpoint,
+            method: event.httpMethod 
+          })
         };
     }
   } catch (error) {
@@ -213,9 +218,8 @@ export const handler: Handler = async (event, context) => {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
-        error: 'Internal Server Error', 
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        error: 'Internal Server Error',
+        message: error instanceof Error ? error.message : 'Unknown error'
       })
     };
   } finally {
