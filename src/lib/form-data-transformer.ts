@@ -80,44 +80,48 @@ export default class FormDataTransformer {
   }
 
   transform(): ApiRequestData {
-    return {
-      age: this.formData.age,
+    const transformed = {
+      age: Number(this.formData.age),
       employment_status: this.formData.employmentStatus,
-      annual_income: this.formData.annualIncome,
+      annual_income: Number(this.formData.annualIncome),
       marital_status: this.formData.maritalStatus,
-      dependents: parseInt(this.formData.dependents, 10),
+      dependents: Number(this.formData.dependents) || 0,
       financial_goals: this.transformGoals(),
       investment_horizon: this.formData.investmentHorizon,
       risk_tolerance: this.formData.riskTolerance,
-      risk_comfort_level: this.formData.riskComfortLevel,
-      monthly_income: this.formData.monthlyIncome,
-      monthly_expenses: this.formData.monthlyExpenses,
-      has_debts: this.formData.hasDebts,
-      debt_details: this.formData.debtDetails,
-      has_emergency_fund: this.formData.hasEmergencyFund,
-      emergency_fund_months: this.formData.emergencyFundMonths,
-      selected_investments: this.formData.selectedInvestments,
-      management_style: this.formData.managementStyle,
-      has_ethical_preferences: this.formData.hasEthicalPreferences,
-      ethical_preferences: this.formData.ethicalPreferences,
-      interested_in_tax_advantaged: this.formData.interestedInTaxAdvantaged,
-      needs_liquidity: this.formData.needsLiquidity,
-      liquidity_timeframe: this.formData.liquidityTimeframe,
-      investment_knowledge: this.formData.investmentKnowledge,
-      has_investment_experience: this.formData.hasInvestmentExperience,
-      investment_experience: this.formData.investmentExperience,
-      planning_life_changes: this.formData.planningLifeChanges,
-      life_changes_details: this.formData.lifeChangesDetails,
-      investment_involvement: this.formData.investmentInvolvement,
-      additional_comments: this.formData.additionalComments
+      risk_comfort_level: Number(this.formData.riskComfortLevel),
+      monthly_income: Number(this.formData.monthlyIncome),
+      monthly_expenses: Number(this.formData.monthlyExpenses),
+      has_debts: Boolean(this.formData.hasDebts),
+      debt_details: this.formData.debtDetails || "",
+      has_emergency_fund: Boolean(this.formData.hasEmergencyFund),
+      emergency_fund_months: Number(this.formData.emergencyFundMonths) || 0,
+      selected_investments: Array.isArray(this.formData.selectedInvestments) ? this.formData.selectedInvestments : [],
+      management_style: this.formData.managementStyle || "passive",
+      has_ethical_preferences: Boolean(this.formData.hasEthicalPreferences),
+      ethical_preferences: this.formData.ethicalPreferences || "",
+      interested_in_tax_advantaged: Boolean(this.formData.interestedInTaxAdvantaged),
+      needs_liquidity: Boolean(this.formData.needsLiquidity),
+      liquidity_timeframe: this.formData.liquidityTimeframe || "",
+      investment_knowledge: this.formData.investmentKnowledge || "",
+      has_investment_experience: Boolean(this.formData.hasInvestmentExperience),
+      investment_experience: this.formData.investmentExperience || "",
+      planning_life_changes: Boolean(this.formData.planningLifeChanges),
+      life_changes_details: this.formData.lifeChangesDetails || "",
+      investment_involvement: this.formData.investmentInvolvement || "",
+      additional_comments: this.formData.additionalComments || ""
     };
+    return transformed;
   }
 
   private transformGoals(): FinancialGoal[] {
+    if (!Array.isArray(this.formData.selectedGoals)) {
+      return [];
+    }
     return this.formData.selectedGoals.map(goal => ({
-      goal_type: goal,
-      target_amount: 0, // You might want to add these fields to your form
-      timeline_years: 5 // Default value, adjust as needed
+      goal_type: String(goal),
+      target_amount: 0,
+      timeline_years: 5
     }));
   }
 }

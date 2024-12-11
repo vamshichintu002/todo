@@ -160,11 +160,43 @@ export const handler: Handler = async (event, context) => {
         const formDetails = await prisma.form_details.upsert({
           where: { userId: user.id },
           update: {
+            name: formData.name,
+            phone: formData.phone,
+            age: Number(formData.age),
+            employmentStatus: formData.employmentStatus,
+            annualIncome: Number(formData.annualIncome),
+            maritalStatus: formData.maritalStatus,
+            selectedGoals: Array.isArray(formData.selectedGoals) ? formData.selectedGoals : [],
+            investmentHorizon: formData.investmentHorizon,
+            riskTolerance: formData.riskTolerance,
+            riskComfortLevel: Number(formData.riskComfortLevel),
+            monthlyIncome: Number(formData.monthlyIncome),
+            monthlyExpenses: Number(formData.monthlyExpenses),
+            selectedInvestments: Array.isArray(formData.selectedInvestments) ? formData.selectedInvestments : [],
+            managementStyle: formData.managementStyle,
+            lifeChangesDetails: formData.lifeChangesDetails || "",
+            comments: formData.additionalComments || "",
             api_out_json: transformedData,
             updatedAt: new Date()
           },
           create: {
             userId: user.id,
+            name: formData.name,
+            phone: formData.phone,
+            age: Number(formData.age),
+            employmentStatus: formData.employmentStatus,
+            annualIncome: Number(formData.annualIncome),
+            maritalStatus: formData.maritalStatus,
+            selectedGoals: Array.isArray(formData.selectedGoals) ? formData.selectedGoals : [],
+            investmentHorizon: formData.investmentHorizon,
+            riskTolerance: formData.riskTolerance,
+            riskComfortLevel: Number(formData.riskComfortLevel),
+            monthlyIncome: Number(formData.monthlyIncome),
+            monthlyExpenses: Number(formData.monthlyExpenses),
+            selectedInvestments: Array.isArray(formData.selectedInvestments) ? formData.selectedInvestments : [],
+            managementStyle: formData.managementStyle,
+            lifeChangesDetails: formData.lifeChangesDetails || "",
+            comments: formData.additionalComments || "",
             api_out_json: transformedData
           }
         });
