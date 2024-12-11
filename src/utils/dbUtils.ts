@@ -1,12 +1,15 @@
 import { Pool } from 'pg';
 import { FormDataTransformer } from './formDataTransformer';
 
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set');
+}
+
 const pool = new Pool({
-  user: 'your_username',
-  host: 'localhost',
-  database: 'your_database',
-  password: 'your_password',
-  port: 5432,
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false
 });
 
 export async function storeFormData(formData: any, clerkId: string) {
@@ -33,13 +36,16 @@ export async function storeFormData(formData: any, clerkId: string) {
 
     const result = await client.query(query, values);
     return result.rows[0];
+  } catch (error) {
+    console.error('Error storing form data:', error);
+    throw error;
   } finally {
     client.release();
   }
 }
 
-// Create the necessary table if it doesn't exist
-export async function initializeDatabase() {
+// Initialize database function
+async function initializeDatabase() {
   const client = await pool.connect();
   try {
     await client.query(`
@@ -50,8 +56,17 @@ export async function initializeDatabase() {
         json_data JSONB NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
+      
+      CREATE INDEX IF NOT EXISTS idx_form_details_clerk_id ON form_details(clerk_id);
     `);
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    throw error;
   } finally {
     client.release();
   }
 }
+
+// Create the necessary table if it doesn't exist
+initializeDatabase().catch(console.error);

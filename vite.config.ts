@@ -17,13 +17,42 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     manifest: true,
+    sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks: {
+          vendor: [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            '@clerk/clerk-react',
+            'tailwindcss',
+          ],
+          ui: [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-label',
+            '@radix-ui/react-select',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-toast',
+          ],
+        },
         assetFileNames: 'assets/[name].[hash].[ext]',
         chunkFileNames: 'assets/[name].[hash].js',
         entryFileNames: 'assets/[name].[hash].js',
       }
+    },
+    target: 'es2015',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false,
+        drop_debugger: true
+      }
     }
+  },
+  server: {
+    port: 5173,
+    strictPort: true,
+    host: true
   }
 });
