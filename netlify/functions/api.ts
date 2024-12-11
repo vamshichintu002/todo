@@ -160,12 +160,12 @@ export const handler: Handler = async (event, context) => {
         const formDetails = await prisma.form_details.upsert({
           where: { userId: user.id },
           update: {
-            ...transformedData,
+            api_out_json: transformedData,
             updatedAt: new Date()
           },
           create: {
             userId: user.id,
-            ...transformedData
+            api_out_json: transformedData
           }
         });
 
